@@ -20,6 +20,7 @@ class AgentState(TypedDict):
     retry_count: int
     error: Optional[str]
     should_retry: bool
+    last_raw_output: Optional[str]
 
 class ReviewAgent:
     """LangGraph orchestration agent that runs the code review workflow node by node."""
@@ -134,6 +135,9 @@ class ReviewAgent:
     async def generate_node(self, state: AgentState) -> AgentState:
         """
         Node: Assemble the prompt and query the LLM for the review response.
+        If a previous attempt failed with a JSON parse error, uses the
+        SELF_CRITIQUE_PROMPT to feed the malformed output back to the LLM
+        for self-correction.
         """
         if state.get("error"):
             return state
@@ -144,14 +148,21 @@ class ReviewAgent:
             return state
 
         try:
-            bundle = state.get("raw_bundle")
-            jira_ticket = bundle.jira_ticket if bundle else None
-
-            # Build prompt
-            prompt = self.assembler.build(context_pack, state["pr_event"], jira_ticket)
-
             import time
             import json
+
+            last_raw = state.get("last_raw_output")
+            if last_raw and state.get("retry_count", 0) > 0:
+                # Self-critique: feed the malformed output back for correction
+                from ..prompt.templates import SELF_CRITIQUE_PROMPT
+                prompt = SELF_CRITIQUE_PROMPT.format(previous_output=last_raw)
+                logger.info("Using SELF_CRITIQUE_PROMPT to correct previous malformed output.")
+            else:
+                # Normal first attempt: build prompt from context
+                bundle = state.get("raw_bundle")
+                jira_ticket = bundle.jira_ticket if bundle else None
+                prompt = self.assembler.build(context_pack, state["pr_event"], jira_ticket)
+
             start_time = time.time()
             
             # Call Ollama (expecting a valid JSON conforming to ReviewResponse)
@@ -170,7 +181,11 @@ class ReviewAgent:
             review = ReviewResponse.model_validate(response_json)
             state["review"] = review
             state["error"] = None
+            state["last_raw_output"] = None
         except Exception as e:
+            # Capture the raw text that failed to parse for self-critique on retry
+            raw_text = getattr(e, "raw_response", None) or str(e)
+            state["last_raw_output"] = raw_text
             state["error"] = f"Review generation failed: {str(e)}"
             logger.error(f"Error in generate_node: {e}", exc_info=True)
         return state
@@ -269,7 +284,8 @@ class ReviewAgent:
             "review": None,
             "retry_count": 0,
             "error": None,
-            "should_retry": False
+            "should_retry": False,
+            "last_raw_output": None
         }
         
         try:

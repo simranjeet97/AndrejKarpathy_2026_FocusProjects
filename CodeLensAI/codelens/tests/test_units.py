@@ -282,3 +282,72 @@ def test_api_config_endpoint():
     assert "sqlite_path" in config
     assert "excel_path" in config
     assert "github_token_configured" in config
+
+
+def test_review_dispatcher():
+    """Verify that ReviewDispatcher formats reviews, filters inline issues, and dispatches them correctly."""
+    from codelens.src.output.dispatcher import ReviewDispatcher
+    from codelens.src.github.client import GitHubClient
+
+    mock_github = MagicMock(spec=GitHubClient)
+    mock_excel = MagicMock(spec=ExcelLogger)
+
+    dispatcher = ReviewDispatcher(github_client=mock_github, excel_logger=mock_excel)
+
+    pr_event = PREvent(
+        pr_id=123,
+        repo="test/repo",
+        commit_sha="abcdef123456",
+        title="feat: add hello world",
+        body="PR body",
+        author="coder",
+        changed_files=[],
+        created_at=datetime.now(timezone.utc),
+    )
+
+    review = ReviewResponse(
+        summary="Code looks great.",
+        issues=[
+            Issue(
+                file_path="main.py",
+                line_number=10,
+                severity=IssueSeverity.HIGH,
+                category=IssueCategory.LOGIC,
+                message="Null pointer risk",
+                suggestion="Check for None",
+            ),
+            Issue(
+                file_path="utils.py",
+                line_number=20,
+                severity=IssueSeverity.LOW,
+                category=IssueCategory.STYLE,
+                message="Trailing whitespace",
+                suggestion="Strip it",
+            ),
+        ],
+        suggestions=[],
+        approval=ApprovalStatus.APPROVE,
+        confidence=0.95,
+        tokens_used=100,
+        model_used="qwen2.5:7b",
+        latency_ms=10.0,
+    )
+
+    dispatcher.dispatch(pr_event, review)
+
+    # Verify formatting occurred and github post was called with correct structure
+    assert mock_github.post_review.called
+    args, kwargs = mock_github.post_review.call_args
+    posted_repo, posted_pr_id, posted_review = args
+
+    assert posted_repo == "test/repo"
+    assert posted_pr_id == 123
+    assert "CodeLens AI Review Feedback" in posted_review.summary
+    assert "Null pointer risk" in posted_review.summary or "APPROVE" in posted_review.summary
+    # Low severity issues are filtered out of inline comments
+    assert len(posted_review.issues) == 1
+    assert posted_review.issues[0].file_path == "main.py"
+
+    # Verify excel logging occurred
+    assert mock_excel.log_review.called
+

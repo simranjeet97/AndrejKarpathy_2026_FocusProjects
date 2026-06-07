@@ -7,7 +7,7 @@ name = "codelens-ai"
 version = "0.1.0"
 description = "CodeLens AI project"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -21,7 +21,6 @@ dependencies = [
     "langgraph",
     "langchain-core",
     "dspy-ai",
-    "sentence-transformers",
     "ollama",
     "openpyxl",
     "pandas",
@@ -40,3 +39,6 @@ dev = [
     "pytest",
     "pytest-asyncio",
 ]
+
+[tool.setuptools.packages.find]
+include = ["codelens*"]

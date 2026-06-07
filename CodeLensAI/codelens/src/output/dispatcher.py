@@ -24,8 +24,8 @@ class ReviewDispatcher:
 
     def dispatch(self, pr_event: PREvent, review: ReviewResponse) -> None:
         """
-        Orchestrate dispatching: format summary comment, post summary review and
-        inline comments, log to Excel, and log metrics.
+        Orchestrate dispatching: format summary comment, post a single consolidated
+        review with inline comments, log to Excel, and log metrics.
 
         Args:
             pr_event: The Pull Request event.
@@ -33,17 +33,21 @@ class ReviewDispatcher:
         """
         logger.info(f"Dispatching review for {pr_event.repo} PR #{pr_event.pr_id}")
 
-        # Post review summary comment and inline comments to GitHub (catch errors gracefully)
+        # Build inline comments for CRITICAL/HIGH issues (max 10 to avoid noise)
+        inline_issues = self._select_inline_issues(review)
+
+        # Post a single consolidated review to GitHub (summary + inline comments)
         try:
             summary_comment = self._format_summary_comment(review)
-            # Create a review response copy with the formatted summary
-            summary_review = review.model_copy(update={
+            consolidated_review = review.model_copy(update={
                 "summary": summary_comment,
-                "issues": []  # Inline comments are posted separately by _post_inline_comments
+                "issues": inline_issues
             })
-            self.github_client.post_review(pr_event.repo, pr_event.pr_id, summary_review)
-            self._post_inline_comments(pr_event, review)
-            logger.info("Successfully posted review summary and inline comments to GitHub.")
+            self.github_client.post_review(pr_event.repo, pr_event.pr_id, consolidated_review)
+            logger.info(
+                f"Successfully posted consolidated review with {len(inline_issues)} "
+                f"inline comments to GitHub."
+            )
         except Exception as e:
             logger.error(f"GitHub dispatch failed: {e}", exc_info=True)
 
@@ -60,6 +64,27 @@ class ReviewDispatcher:
             f"Approval: {review.approval} | Issues: {len(review.issues)} | "
             f"Tokens: {review.tokens_used} | Latency: {review.latency_ms:.1f}ms"
         )
+
+    def _select_inline_issues(self, review: ReviewResponse) -> List[Issue]:
+        """
+        Select issues eligible for inline GitHub comments.
+        Only CRITICAL and HIGH severity issues with a line_number are included,
+        capped at 10 to prevent notification spam.
+
+        Args:
+            review: Final review response.
+
+        Returns:
+            A filtered list of Issue instances for inline commenting.
+        """
+        selected = []
+        for issue in review.issues:
+            if len(selected) >= 10:
+                break
+            severity_upper = str(issue.severity).upper()
+            if issue.line_number is not None and severity_upper in ["CRITICAL", "HIGH"]:
+                selected.append(issue)
+        return selected
 
     def _format_summary_comment(self, review: ReviewResponse) -> str:
         """
@@ -102,33 +127,3 @@ class ReviewDispatcher:
         )
         return comment
 
-    def _post_inline_comments(self, pr_event: PREvent, review: ReviewResponse) -> None:
-        """
-        Only post for issues where line_number is not None and severity in [CRITICAL, HIGH].
-        Max 10 inline comments per review (avoid spam).
-
-        Args:
-            pr_event: The Pull Request event.
-            review: Final review response.
-        """
-        posted_count = 0
-        for issue in review.issues:
-            if posted_count >= 10:
-                break
-            severity_upper = str(issue.severity).upper()
-            if issue.line_number is not None and severity_upper in ["CRITICAL", "HIGH"]:
-                body = f"**[{issue.severity}]** {issue.message}\n\n*Suggestion:* {issue.suggestion}"
-                try:
-                    self.github_client.post_inline_comment(
-                        pr_event.repo,
-                        pr_event.pr_id,
-                        issue.file_path,
-                        issue.line_number,
-                        body
-                    )
-                    posted_count += 1
-                except Exception as e:
-                    logger.error(
-                        f"Failed to post inline comment for {issue.file_path}:{issue.line_number}: {e}",
-                        exc_info=True
-                    )

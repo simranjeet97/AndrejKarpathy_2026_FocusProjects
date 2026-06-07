@@ -111,20 +111,10 @@ async def test_full_pr_review_flow():
     settings.SQLITE_PATH = sqlite_path
     settings.EXCEL_PATH = excel_path
 
-    # 3. Use real ChromaDB (in-memory: chromadb.EphemeralClient)
-    real_vector_store = VectorStore(path=settings.CHROMA_PATH)
-    real_vector_store.client = chromadb.EphemeralClient()
-
-    # Wrap client's get_or_create_collection method to use mock embedding function
-    original_get_or_create = real_vector_store.client.get_or_create_collection
+    # 3. Use real ChromaDB (in-memory: chromadb.EphemeralClient) with mock embeddings
     mock_emb = MockEmbeddingFunction()
-
-    def get_or_create_collection_mock(name, *args, **kwargs):
-        if "embedding_function" not in kwargs:
-            kwargs["embedding_function"] = mock_emb
-        return original_get_or_create(name, *args, **kwargs)
-
-    real_vector_store.client.get_or_create_collection = get_or_create_collection_mock
+    real_vector_store = VectorStore(path=settings.CHROMA_PATH, embedding_function=mock_emb)
+    real_vector_store.client = chromadb.EphemeralClient()
 
     # Pre-populate ChromaDB with mock chunks so harvesting works
     arch_chunks = [

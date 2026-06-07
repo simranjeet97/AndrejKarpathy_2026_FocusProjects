@@ -29,9 +29,12 @@ def get_github_client() -> GitHubClient:
 
 @lru_cache
 def get_vector_store() -> VectorStore:
-    """Retrieve VectorStore singleton."""
+    """Retrieve VectorStore singleton with unified Ollama embeddings."""
+    from ..memory.vector_store import OllamaEmbeddingFunction
     settings = get_settings()
-    return VectorStore(path=settings.CHROMA_PATH)
+    ollama_client = get_ollama_client()
+    embedding_fn = OllamaEmbeddingFunction(ollama_client=ollama_client)
+    return VectorStore(path=settings.CHROMA_PATH, embedding_function=embedding_fn)
 
 
 @lru_cache

@@ -4,7 +4,9 @@ from typing import List, Dict, Optional, Any, AsyncIterator
 
 class OllamaError(Exception):
     """Custom exception raised by the OllamaClient."""
-    pass
+    def __init__(self, message: str, raw_response: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.raw_response = raw_response
 
 class OllamaClient:
     """Client for interacting with the Ollama LLM APIs."""
@@ -70,7 +72,10 @@ class OllamaClient:
                 try:
                     return json.loads(cleaned_text)
                 except json.JSONDecodeError as je:
-                    raise OllamaError(f"Failed to parse JSON response from Ollama: {cleaned_text}") from je
+                    raise OllamaError(
+                        f"Failed to parse JSON response from Ollama: {cleaned_text}",
+                        raw_response=cleaned_text
+                    ) from je
             else:
                 return {"response": response_text}
 
@@ -80,6 +85,7 @@ class OllamaClient:
             if not isinstance(e, OllamaError):
                 raise OllamaError(f"Unexpected error during Ollama generate: {e}") from e
             raise
+
 
     async def generate_stream(self, prompt: str) -> AsyncIterator[str]:
         """

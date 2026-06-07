@@ -198,6 +198,9 @@ class PromptAssembler:
         """
         Helper method to filter and format scored chunks of a particular source type.
 
+        The chunks have already been scored, compressed, and budget-trimmed by the
+        ContextRanker, so we use their full content without arbitrary truncation.
+
         Args:
             chunks: List of DocChunk instances.
             source_type: The target SourceType to filter by.
@@ -208,7 +211,6 @@ class PromptAssembler:
         matched_chunks = [c for c in chunks if c.source_type == source_type]
         formatted = []
         for c in matched_chunks:
-            truncated = c.content[:800]
-            formatted.append(truncated)
+            formatted.append(c.content)
         return "\n---\n".join(formatted) if formatted else ""
 

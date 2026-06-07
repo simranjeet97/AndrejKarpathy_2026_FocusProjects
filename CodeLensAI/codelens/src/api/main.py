@@ -35,7 +35,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"Dragonfly (Redis) URL: {settings.DRAGONFLY_URL}")
     logger.info(f"Excel Path: {settings.EXCEL_PATH}")
     yield
+    # Shutdown: clean up connection pools
     logger.info("Shutting down CodeLens AI FastAPI Application...")
+    try:
+        short_term = get_short_term_memory()
+        await short_term.close()
+        logger.info("Redis/Dragonfly short-term memory connection closed.")
+    except Exception as e:
+        logger.error(f"Error closing short-term memory connection: {e}")
 
 
 app = FastAPI(title="CodeLens AI", lifespan=lifespan)

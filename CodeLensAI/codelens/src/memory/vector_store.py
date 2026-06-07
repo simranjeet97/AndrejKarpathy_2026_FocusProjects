@@ -5,17 +5,53 @@ from ..models import DocChunk
 
 logger = logging.getLogger(__name__)
 
+
+class OllamaEmbeddingFunction(chromadb.EmbeddingFunction):
+    """Custom ChromaDB embedding function that delegates to the local Ollama service.
+
+    This ensures the same embedding model (e.g. nomic-embed-text) is used for both
+    ingestion and retrieval, preventing dimension-mismatch errors that occur when
+    ChromaDB's default embedding model differs from the one used during ingestion.
+    """
+
+    def __init__(self, ollama_client: Any) -> None:
+        """
+        Initialize with an OllamaClient instance.
+
+        Args:
+            ollama_client: An instance of OllamaClient with an embed() method.
+        """
+        self.ollama_client = ollama_client
+
+    def __call__(self, input: chromadb.Documents) -> chromadb.Embeddings:
+        """
+        Generate embeddings for the given documents using the Ollama embed model.
+
+        Args:
+            input: List of text strings to embed.
+
+        Returns:
+            A list of float-list embeddings.
+        """
+        return self.ollama_client.embed(list(input))
+
+
 class VectorStore:
     """ChromaDB wrapper for storing and querying documentation and code chunk embeddings."""
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, embedding_function: Optional[chromadb.EmbeddingFunction] = None) -> None:
         """
-        Initialize the VectorStore with a persistence path.
+        Initialize the VectorStore with a persistence path and optional embedding function.
 
         Args:
             path: Local path where ChromaDB databases are stored.
+            embedding_function: Optional custom embedding function for collections.
+                                When provided, all collections will use this function
+                                for both ingestion and retrieval, ensuring a unified
+                                embedding space.
         """
         self.client = chromadb.PersistentClient(path=path)
+        self.embedding_function = embedding_function
 
     def get_or_create_collection(self, name: str) -> Any:
         """
@@ -27,7 +63,10 @@ class VectorStore:
         Returns:
             The Chroma collection object.
         """
-        return self.client.get_or_create_collection(name=name)
+        kwargs = {"name": name}
+        if self.embedding_function is not None:
+            kwargs["embedding_function"] = self.embedding_function
+        return self.client.get_or_create_collection(**kwargs)
 
     def add_documents(self, collection_name: str, chunks: List[DocChunk], embeddings: Optional[List[List[float]]] = None) -> None:
         """
@@ -37,6 +76,8 @@ class VectorStore:
             collection_name: Target collection name.
             chunks: A list of DocChunk instances to add.
             embeddings: Optional pre-computed embeddings for the chunks.
+                        When None and an embedding_function is set, ChromaDB will
+                        use the embedding_function to generate embeddings automatically.
         """
         collection = self.get_or_create_collection(collection_name)
         
@@ -173,4 +214,3 @@ class VectorStore:
         """
         self.client.delete_collection(name=collection_name)
         logger.info(f"Deleted collection: {collection_name}")
-

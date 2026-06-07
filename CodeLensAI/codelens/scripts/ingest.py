@@ -1,13 +1,13 @@
 import os
 import sys
 import argparse
-from sentence_transformers import SentenceTransformer
 
 # Add workspace root to sys.path to allow absolute imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from codelens.src.config.settings import get_settings
-from codelens.src.memory.vector_store import VectorStore
+from codelens.src.memory.vector_store import VectorStore, OllamaEmbeddingFunction
+from codelens.src.llm.ollama_client import OllamaClient
 from codelens.src.models import DocChunk, SourceType
 
 def chunk_text(text: str) -> list[str]:
@@ -54,12 +54,17 @@ def main() -> None:
         sys.exit(1)
         
     settings = get_settings()
-    vector_store = VectorStore(path=settings.CHROMA_PATH)
-    
-    # Load embedding model
-    print("Loading SentenceTransformer model 'all-mpnet-base-v2'...")
-    model = SentenceTransformer("all-mpnet-base-v2")
-    
+
+    # Initialize Ollama client and unified embedding function
+    ollama_client = OllamaClient(
+        base_url=settings.OLLAMA_BASE_URL,
+        model_code=settings.OLLAMA_MODEL_CODE,
+        model_reason=settings.OLLAMA_MODEL_REASON,
+        embed_model=settings.OLLAMA_EMBED_MODEL
+    )
+    embedding_fn = OllamaEmbeddingFunction(ollama_client=ollama_client)
+    vector_store = VectorStore(path=settings.CHROMA_PATH, embedding_function=embedding_fn)
+
     chunks_to_ingest = []
     file_count = 0
     
@@ -91,15 +96,14 @@ def main() -> None:
         print("No documents found or chunked for ingestion.")
         return
         
-    print(f"Generating embeddings for {len(chunks_to_ingest)} chunks...")
-    contents = [c.content for c in chunks_to_ingest]
-    embeddings_raw = model.encode(contents, show_progress_bar=True)
-    embeddings = [embedding.tolist() for embedding in embeddings_raw]
+    # Embeddings are now generated automatically by ChromaDB via the
+    # OllamaEmbeddingFunction, ensuring the same model is used for both
+    # ingestion and retrieval. No need to pre-compute embeddings here.
+    print(f"Ingesting {len(chunks_to_ingest)} chunks from {file_count} files into collection '{collection_name}'...")
+    print(f"Using Ollama embed model: {settings.OLLAMA_EMBED_MODEL}")
+    vector_store.add_documents(collection_name, chunks_to_ingest)
     
-    print(f"Ingesting chunks into collection '{collection_name}'...")
-    vector_store.add_documents(collection_name, chunks_to_ingest, embeddings)
-    
-    print(f"Ingested {len(chunks_to_ingest)} chunks from {file_count} files into collection {collection_name}")
+    print(f"Successfully ingested {len(chunks_to_ingest)} chunks from {file_count} files into collection '{collection_name}'")
 
 if __name__ == "__main__":
     main()
