@@ -1,0 +1,55 @@
+# Environment variables / secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.*
+!.env.example
+
+# Credentials / Keys / Secrets
+*.pem
+*.key
+*.pub
+*credentials*.json
+*secret*.json
+*.p12
+
+# Database files & directories
+*.db
+*.sqlite
+*.sqlite3
+data/
+test_chroma/
+
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python Build / Distribution / Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db

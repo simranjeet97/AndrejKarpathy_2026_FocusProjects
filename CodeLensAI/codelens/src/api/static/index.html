@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CodeLens AI — Dashboard</title>
+    <meta name="description" content="CodeLens AI automated code review dashboard with glassmorphism UI. Monitor PR reviews, trigger manual reviews, and view system health."/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #0A84FF;
+            --primary-glow: rgba(10, 132, 255, 0.4);
+            --secondary: #1A1A2E;
+            --background: #0D0D0D;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(10, 132, 255, 0.3);
+            --success: #34C759;
+            --error: #FF3B30;
+            --warning: #FF9500;
+            --text: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --text-white: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(10, 132, 255, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(10, 132, 255, 0.05), transparent 25%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 0;
+            gap: 3rem;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid var(--border);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+            position: fixed;
+            left: 0; top: 0;
+            height: 100vh;
+            width: 80px;
+            z-index: 40;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--primary), #007AFF);
+            box-shadow: 0 0 20px var(--primary-glow);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .logo-icon:hover { transform: scale(1.05); }
+
+        .nav-links { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; padding: 0 0.5rem; }
+        .nav-item {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; aspect-ratio: 1; border-radius: 12px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .nav-item:hover { color: var(--primary); background: rgba(255, 255, 255, 0.05); }
+        .nav-item.active {
+            background: rgba(10, 132, 255, 0.1);
+            color: var(--primary);
+            box-shadow: inset 2px 0 0 var(--primary), 0 0 15px rgba(10, 132, 255, 0.2);
+        }
+        .nav-item .material-symbols-outlined { font-size: 28px; }
+
+        .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .user-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--secondary); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); font-size: 18px;
+            overflow: hidden;
+        }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 80px;
+            padding: 2rem 2.5rem 2.5rem;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+        .header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; color: var(--text-white); letter-spacing: -0.02em; }
+        .header p { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem; }
+
+        .health-bar {
+            display: flex; align-items: center; gap: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+        }
+        .health-indicator { display: flex; align-items: center; gap: 0.5rem; }
+        .health-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .health-dot.ok { background: var(--success); box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
+        .health-dot.err { background: var(--error); box-shadow: 0 0 8px rgba(255, 59, 48, 0.8); }
+        .health-dot.loading { background: var(--warning); box-shadow: 0 0 8px rgba(255, 149, 0, 0.8); animation: pulse 1.5s infinite; }
+        .health-label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; }
+        .health-sep { width: 1px; height: 16px; background: var(--border); }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Glass Card */
+        .glass-card {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 32px rgba(10, 132, 255, 0.1);
+        }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { padding: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start; transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .stat-card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(10, 132, 255, 0.15); }
+        .stat-label { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem; }
+        .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.875rem; font-weight: 700; color: var(--text-white); }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Main Grid */
+        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+
+        /* Table */
+        .reviews-table { width: 100%; text-align: left; font-size: 0.875rem; white-space: nowrap; border-collapse: collapse; }
+        .reviews-table thead { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; text-transform: uppercase; background: rgba(255,255,255,0.01); }
+        .reviews-table th { padding: 0.75rem 1.25rem; font-weight: 500; }
+        .reviews-table tbody tr { border-top: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; cursor: pointer; }
+        .reviews-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .reviews-table td { padding: 1rem 1.25rem; color: rgba(255,255,255,0.8); }
+        .reviews-table .pr-num { font-family: 'JetBrains Mono', monospace; color: var(--text-white); }
+        .reviews-table tr:hover .pr-num { color: var(--primary); }
+
+        /* Status Badges */
+        .badge {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+            letter-spacing: 0.05em; padding: 0.25rem 0.5rem;
+            border-radius: 4px; display: inline-block;
+        }
+        .badge-approve { background: rgba(52,199,89,0.15); color: var(--success); border: 1px solid rgba(52,199,89,0.3); }
+        .badge-request { background: rgba(255,59,48,0.15); color: var(--error); border: 1px solid rgba(255,59,48,0.3); }
+        .badge-comment { background: rgba(255,149,0,0.15); color: var(--warning); border: 1px solid rgba(255,149,0,0.3); }
+
+        /* Right Column */
+        .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        /* Form */
+        .form-card { padding: 1.25rem; }
+        .form-card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--text-white); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.08em; }
+        .form-input {
+            width: 100%; background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.5rem 0.75rem; font-size: 0.875rem;
+            color: var(--text-white); outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+        }
+        .form-input::placeholder { color: rgba(255,255,255,0.2); }
+        .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(10,132,255,0.15); }
+
+        .btn-primary {
+            width: 100%; padding: 0.625rem;
+            background: linear-gradient(135deg, #0A84FF 0%, #007AFF 100%);
+            box-shadow: 0 0 15px var(--primary-glow);
+            border: none; border-radius: 8px;
+            color: white; font-weight: 500; font-size: 0.875rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary:hover { box-shadow: 0 0 25px rgba(10, 132, 255, 0.6); transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Bar Chart */
+        .bar-chart { display: flex; flex-direction: column; gap: 1rem; }
+        .bar-row label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; }
+        .bar-row label span:first-child { color: var(--text); }
+        .bar-row label span:last-child { font-family: 'JetBrains Mono', monospace; }
+        .bar-track { width: 100%; background: rgba(255,255,255,0.05); border-radius: 9999px; height: 8px; overflow: hidden; }
+        .bar-fill { height: 8px; border-radius: 9999px; transition: width 0.8s ease; }
+
+        /* Card Title */
+        .card-header { padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--text-white); }
+        .card-header a { font-size: 0.75rem; color: var(--primary); text-decoration: none; transition: color 0.2s; }
+        .card-header a:hover { color: white; }
+
+        /* Loading spinner */
+        .spinner { width: 16px; height: 16px; border: 2px solid transparent; border-top: 2px solid white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast {
+            background: var(--surface); backdrop-filter: blur(20px); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.5rem; color: var(--text-white);
+            font-size: 0.875rem; min-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--error); }
+        .toast.info { border-left: 3px solid var(--primary); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Review Detail Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            z-index: 50; display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: rgba(20,20,20,0.95); backdrop-filter: blur(32px);
+            border: 1px solid var(--border); border-radius: 16px;
+            width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto;
+            padding: 2rem; box-shadow: 0 16px 64px rgba(10,132,255,0.15);
+            position: relative;
+        }
+        .modal-content h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; color: white; margin-bottom: 1.5rem; padding-right: 2rem; }
+        .modal-close-btn {
+            position: absolute; top: 1rem; right: 1rem;
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 24px; padding: 0.25rem; border-radius: 8px;
+            transition: all 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close-btn:hover { color: var(--text-white); background: rgba(255,255,255,0.1); }
+        .detail-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 1rem; }
+        .detail-label { color: var(--text-muted); font-size: 0.875rem; white-space: nowrap; }
+        .detail-value { color: var(--text-white); font-size: 0.875rem; font-family: 'JetBrains Mono', monospace; text-align: right; word-break: break-word; max-width: 65%; }
+
+        /* Issues List styling inside modal */
+        .modal-issues-title { font-size: 1.15rem; font-weight: 600; color: white; margin: 1.8rem 0 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; font-family: 'Space Grotesk', sans-serif; }
+        .modal-issue-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .modal-issue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 1rem; }
+        .modal-issue-path { font-family: 'JetBrains Mono', monospace; font-size: 0.775rem; color: var(--primary); word-break: break-all; }
+        .modal-issue-meta { display: flex; gap: 0.5rem; align-items: center; }
+        .modal-issue-desc { font-size: 0.825rem; color: rgba(255,255,255,0.85); margin-bottom: 0.75rem; line-height: 1.4; }
+        .modal-issue-sug { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 0.75rem; color: #a5d6ff; white-space: pre-wrap; word-break: break-all; }
+        
+        .badge-sev { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; display: inline-block; font-family: 'JetBrains Mono', monospace; }
+        .badge-sev.critical { background: rgba(255, 59, 48, 0.15); color: #ff453a; border: 1px solid rgba(255, 59, 48, 0.3); }
+        .badge-sev.high { background: rgba(255, 149, 0, 0.15); color: #ff9f0a; border: 1px solid rgba(255, 149, 0, 0.3); }
+        .badge-sev.medium { background: rgba(255, 214, 10, 0.15); color: #ffd60a; border: 1px solid rgba(255, 214, 10, 0.3); }
+        .badge-sev.low { background: rgba(52, 199, 89, 0.15); color: #30d158; border: 1px solid rgba(52, 199, 89, 0.3); }
+
+        .modal-sug-item { font-size: 0.825rem; color: rgba(255,255,255,0.85); padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; gap: 0.5rem; align-items: flex-start; }
+
+        /* Notification Panel */
+        .notif-panel {
+            position: fixed; top: 3.5rem; right: 1.5rem; width: 320px; z-index: 60;
+            background: rgba(17,17,17,0.95); backdrop-filter: blur(24px);
+            border: 1px solid var(--border); border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5); padding: 0;
+            display: none; animation: slideIn 0.2s ease;
+        }
+        .notif-panel.active { display: block; }
+        .notif-panel-header {
+            padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .notif-panel-header h3 { font-family: 'Space Grotesk', sans-serif; font-size: 0.975rem; font-weight: 600; color: var(--text-white); }
+        .notif-panel-body { padding: 0.5rem 0; max-height: 300px; overflow-y: auto; }
+        .notif-item {
+            padding: 0.75rem 1.25rem; display: flex; align-items: flex-start; gap: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s;
+        }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-item .material-symbols-outlined { font-size: 18px; color: var(--primary); margin-top: 2px; }
+        .notif-item-text { font-size: 0.8rem; color: var(--text); line-height: 1.4; }
+        .notif-item-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+        .notif-empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
+        .notif-badge {
+            position:absolute; top:0; right:0; min-width:16px; height:16px;
+            background:var(--primary); border-radius:50%; border:2px solid var(--background);
+            font-size:0.6rem; font-weight:600; color:white; display:flex; align-items:center; justify-content:center;
+            transition: transform 0.2s;
+        }
+        .notif-badge.hidden { display: none; }
+
+        /* Page views */
+        .page-view { display: none; }
+        .page-view.active { display: block; }
+
+        /* Settings page */
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .settings-card { padding: 1.5rem; }
+        .settings-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-white); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 0.625rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .settings-item:last-child { border-bottom: none; }
+        .settings-key { font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .settings-val { font-size: 0.8rem; color: var(--text-white); font-family: 'JetBrains Mono', monospace; max-width: 55%; text-align: right; word-break: break-all; }
+        @media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } }
+
+        /* Empty state */
+        .empty-state { padding: 3rem; text-align: center; color: var(--text-muted); }
+        .empty-state .material-symbols-outlined { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 1rem; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" aria-label="Main Navigation">
+        <div class="logo-icon" title="CodeLens AI">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+        </div>
+        <div class="nav-links">
+            <a class="nav-item active" href="#" title="Dashboard" id="nav-dashboard">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+            </a>
+            <a class="nav-item" href="#" title="Reviews" id="nav-reviews">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">list_alt</span>
+            </a>
+            <a class="nav-item" href="#" title="Trigger Review" id="nav-trigger">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">rocket_launch</span>
+            </a>
+            <a class="nav-item" href="#" title="Settings" id="nav-settings">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-avatar" title="Profile">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div>
+                <h1 id="page-title">Dashboard</h1>
+                <p id="page-subtitle">Overview of recent code reviews and system health.</p>
+            </div>
+            <div class="health-bar">
+                <div class="health-indicator">
+                    <div class="health-dot loading" id="health-ollama"></div>
+                    <span class="health-label">Ollama</span>
+                </div>
+                <div class="health-sep"></div>
+                <div class="health-indicator">
+                    <div class="health-dot loading" id="health-redis"></div>
+                    <span class="health-label">Redis</span>
+                </div>
+                <div class="health-sep"></div>
+                <button style="background:none;border:none;cursor:pointer;color:var(--text);position:relative;" title="Notifications" id="btn-notif">
+                    <span class="material-symbols-outlined" style="font-size:20px;">notifications</span>
+                    <span class="notif-badge" id="notif-badge">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== PAGE: Dashboard ===== -->
+        <div class="page-view active" id="page-dashboard">
+            <!-- Stats Grid -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="glass-card stat-card" id="card-total-reviews">
+                    <div><p class="stat-label">Total Reviews</p><h3 class="stat-value" id="stat-total">—</h3></div>
+                    <div class="stat-icon" style="background:rgba(10,132,255,0.1);color:var(--primary);">
+                        <span class="material-symbols-outlined">trending_up</span>
+                    </div>
+                </div>
+                <div class="glass-card stat-card" id="card-approval-rate">
+                    <div><p class="stat-label">Approval Rate</p><h3 class="stat-value" id="stat-approve">—</h3></div>
+                    <div class="stat-icon" style="background:rgba(52,199,89,0.1);color:var(--success);">
+                        <span class="material-symbols-outlined">check_circle</span>
+                    </div>
+                </div>
+                <div class="glass-card stat-card" id="card-avg-confidence">
+                    <div><p class="stat-label">Avg Confidence</p><h3 class="stat-value" id="stat-confidence">—</h3></div>
+                    <div class="stat-icon" style="background:rgba(10,132,255,0.1);color:var(--primary);">
+                        <span class="material-symbols-outlined">psychology</span>
+                    </div>
+                </div>
+                <div class="glass-card stat-card" id="card-issues-found">
+                    <div><p class="stat-label">Issues Found</p><h3 class="stat-value" id="stat-issues">—</h3></div>
+                    <div class="stat-icon" style="background:rgba(255,149,0,0.1);color:var(--warning);">
+                        <span class="material-symbols-outlined">warning</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="main-grid">
+                <!-- Left: Recent Reviews -->
+                <div class="glass-card" style="overflow:hidden;display:flex;flex-direction:column;">
+                    <div class="card-header">
+                        <h2>Recent Reviews</h2>
+                        <a href="#" id="btn-view-all">View All</a>
+                    </div>
+                    <div style="overflow-x:auto;flex:1;">
+                        <table class="reviews-table" id="reviews-table">
+                            <thead>
+                                <tr>
+                                    <th>PR #</th>
+                                    <th>Repository</th>
+                                    <th>Author</th>
+                                    <th>Status</th>
+                                    <th>Confidence</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviews-tbody">
+                                <tr><td colspan="6" class="empty-state">
+                                    <span class="material-symbols-outlined">inbox</span>
+                                    <p>Loading reviews...</p>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-col">
+                    <!-- Quick Review Form -->
+                    <div class="glass-card form-card">
+                        <h2>
+                            <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px;">rocket_launch</span>
+                            Quick Review
+                        </h2>
+                        <form id="review-form">
+                            <div class="form-group">
+                                <label class="form-label" for="input-repo">Repository (owner/repo)</label>
+                                <input class="form-input" id="input-repo" type="text" placeholder="e.g. simranjeet97/repo" required/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="input-pr">PR Number</label>
+                                <input class="form-input" id="input-pr" type="number" placeholder="e.g. 1" min="1" required/>
+                            </div>
+                            <button class="btn-primary" type="submit" id="btn-review">
+                                <span>Start Review</span>
+                                <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Issues by Severity -->
+                    <div class="glass-card" style="padding:1.25rem;flex:1;">
+                        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.125rem;font-weight:600;color:white;margin-bottom:1rem;">Issues by Severity</h2>
+                        <div class="bar-chart" id="severity-chart">
+                            <div class="bar-row">
+                                <label><span>Critical</span><span id="sev-crit" style="color:var(--error);">0</span></label>
+                                <div class="bar-track"><div class="bar-fill" id="bar-crit" style="width:0%;background:var(--error);box-shadow:0 0 8px rgba(255,59,48,0.6);"></div></div>
+                            </div>
+                            <div class="bar-row">
+                                <label><span>High</span><span id="sev-high" style="color:var(--warning);">0</span></label>
+                                <div class="bar-track"><div class="bar-fill" id="bar-high" style="width:0%;background:#FF9500;box-shadow:0 0 8px rgba(255,149,0,0.6);"></div></div>
+                            </div>
+                            <div class="bar-row">
+                                <label><span>Medium</span><span id="sev-med" style="color:#FFD60A;">0</span></label>
+                                <div class="bar-track"><div class="bar-fill" id="bar-med" style="width:0%;background:#FFD60A;box-shadow:0 0 8px rgba(255,214,10,0.6);"></div></div>
+                            </div>
+                            <div class="bar-row">
+                                <label><span>Low</span><span id="sev-low" style="color:var(--success);">0</span></label>
+                                <div class="bar-track"><div class="bar-fill" id="bar-low" style="width:0%;background:var(--success);box-shadow:0 0 8px rgba(52,199,89,0.6);"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: Reviews (full list) ===== -->
+        <div class="page-view" id="page-reviews">
+            <div class="glass-card" style="overflow:hidden;display:flex;flex-direction:column;">
+                <div class="card-header">
+                    <h2>All Reviews</h2>
+                    <span style="font-size:0.8rem;color:var(--text-muted);" id="reviews-count-label">—</span>
+                </div>
+                <div style="overflow-x:auto;flex:1;">
+                    <table class="reviews-table" id="all-reviews-table">
+                        <thead>
+                            <tr>
+                                <th>PR #</th>
+                                <th>Repository</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Confidence</th>
+                                <th>Issues</th>
+                                <th>Latency</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-reviews-tbody">
+                            <tr><td colspan="8" class="empty-state">
+                                <span class="material-symbols-outlined">inbox</span>
+                                <p>Loading reviews...</p>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: Trigger Review ===== -->
+        <div class="page-view" id="page-trigger">
+            <div style="max-width:560px;">
+                <div class="glass-card form-card" style="padding:2rem;">
+                    <h2>
+                        <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px;">rocket_launch</span>
+                        Trigger Manual Review
+                    </h2>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">Enter a GitHub repository and PR number, or paste the full Pull Request URL.</p>
+                    <form id="review-form-full">
+                        <div class="form-group">
+                            <label class="form-label" for="input-repo-full">Repository (owner/repo) or PR URL</label>
+                            <input class="form-input" id="input-repo-full" type="text" placeholder="e.g. tensorflow/tensorflow or https://github.com/owner/repo/pull/123" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="input-pr-full">PR Number</label>
+                            <input class="form-input" id="input-pr-full" type="number" placeholder="e.g. 120486" min="1" required/>
+                        </div>
+                        <button class="btn-primary" type="submit" id="btn-review-full">
+                            <span>Start Review</span>
+                            <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: Settings ===== -->
+        <div class="page-view" id="page-settings">
+            <div class="settings-grid">
+                <div class="glass-card settings-card">
+                    <h3><span class="material-symbols-outlined" style="color:var(--primary);font-size:20px;">dns</span> Service Status</h3>
+                    <div class="settings-item">
+                        <span class="settings-key">Ollama</span>
+                        <span class="settings-val" id="settings-ollama">Checking...</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-key">Dragonfly / Redis</span>
+                        <span class="settings-val" id="settings-redis">Checking...</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-key">API Server</span>
+                        <span class="settings-val" style="color:var(--success);">● Online</span>
+                    </div>
+                </div>
+                <div class="glass-card settings-card">
+                    <h3><span class="material-symbols-outlined" style="color:var(--primary);font-size:20px;">smart_toy</span> Model Configuration</h3>
+                    <div class="settings-item">
+                        <span class="settings-key">Code Model</span>
+                        <span class="settings-val" id="settings-code-model">—</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-key">Reason Model</span>
+                        <span class="settings-val" id="settings-reason-model">—</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-key">Embed Model</span>
+                        <span class="settings-val" id="settings-embed-model">—</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-key">Max Context Tokens</span>
+                        <span class="settings-val" id="settings-max-tokens">—</span>
+                    </div>
+                </div>
+                <div class="glass-card settings-card" style="grid-column: 1 / -1;">
+                    <h3><span class="material-symbols-outlined" style="color:var(--primary);font-size:20px;">info</span> System & Storage Configuration</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:0 2rem;">
+                        <div>
+                            <div class="settings-item">
+                                <span class="settings-key">Version</span>
+                                <span class="settings-val">1.0.0</span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-key">API Base</span>
+                                <span class="settings-val" id="settings-api-base">—</span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-key">GitHub Token</span>
+                                <span class="settings-val" id="settings-gh-token">—</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="settings-item">
+                                <span class="settings-key">SQLite Database</span>
+                                <span class="settings-val" id="settings-sqlite">—</span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-key">Excel Logger Path</span>
+                                <span class="settings-val" id="settings-excel">—</span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-key">Dragonfly URL</span>
+                                <span class="settings-val" id="settings-redis-url">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Review Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content" id="modal-content">
+            <button class="modal-close-btn" id="modal-close-x" title="Close (Esc)">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <h2 id="modal-title">Review Details</h2>
+            <div id="modal-body"></div>
+            <button class="btn-primary" style="margin-top:1.5rem;" id="modal-close-btn">Close</button>
+        </div>
+    </div>
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notif-panel">
+        <div class="notif-panel-header">
+            <h3>Notifications</h3>
+            <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;font-family:'Inter',sans-serif;" id="notif-clear">Clear All</button>
+        </div>
+        <div class="notif-panel-body" id="notif-body">
+            <div class="notif-empty">No notifications yet.</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        /* ============================
+         * NOTIFICATION SYSTEM
+         * ============================ */
+        const notifications = [];
+
+        function addNotification(message, icon = 'info', extraData = null) {
+            notifications.unshift({ message, icon, time: new Date(), extraData });
+            if (notifications.length > 20) notifications.pop();
+            renderNotifications();
+        }
+
+        function renderNotifications() {
+            const body = document.getElementById('notif-body');
+            const badge = document.getElementById('notif-badge');
+            if (notifications.length === 0) {
+                body.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+                badge.classList.add('hidden');
+                return;
+            }
+            badge.textContent = notifications.length;
+            badge.classList.remove('hidden');
+            body.innerHTML = notifications.map((n, idx) => {
+                const ago = timeAgo(n.time);
+                const clickAttr = n.extraData ? `onclick="clickNotification(${idx})"` : '';
+                const styleAttr = n.extraData ? 'style="cursor:pointer;"' : '';
+                return `<div class="notif-item" ${clickAttr} ${styleAttr}>
+                    <span class="material-symbols-outlined">${n.icon}</span>
+                    <div><div class="notif-item-text">${n.message}</div><div class="notif-item-time">${ago}</div></div>
+                </div>`;
+            }).join('');
+        }
+
+        function clickNotification(idx) {
+            const n = notifications[idx];
+            if (n && n.extraData) {
+                showReviewDetail(n.extraData);
+                document.getElementById('notif-panel').classList.remove('active');
+            }
+        }
+
+        function timeAgo(date) {
+            const s = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (s < 60) return 'just now';
+            if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+            if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Notification panel toggle
+        document.getElementById('btn-notif').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('notif-panel');
+            panel.classList.toggle('active');
+        });
+        document.getElementById('notif-clear').addEventListener('click', function() {
+            notifications.length = 0;
+            renderNotifications();
+        });
+        // Close panel when clicking outside
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('notif-panel');
+            if (panel.classList.contains('active') && !panel.contains(e.target) && e.target.id !== 'btn-notif') {
+                panel.classList.remove('active');
+            }
+        });
+
+        /* ============================
+         * TOAST SYSTEM
+         * ============================ */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'check_circle', error: 'error', info: 'info' };
+            toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:20px;">${icons[type] || 'info'}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+
+        /* ============================
+         * NAVIGATION / PAGE ROUTING
+         * ============================ */
+        const NAV_PAGES = {
+            'nav-dashboard': { page: 'page-dashboard', title: 'Dashboard', subtitle: 'Overview of recent code reviews and system health.' },
+            'nav-reviews':   { page: 'page-reviews',   title: 'Reviews',   subtitle: 'Complete history of all PR code reviews.' },
+            'nav-trigger':   { page: 'page-trigger',   title: 'Trigger Review', subtitle: 'Manually trigger a code review for any GitHub PR.' },
+            'nav-settings':  { page: 'page-settings',  title: 'Settings',  subtitle: 'Service status and configuration.' }
+        };
+
+        function navigateTo(navId) {
+            // Update nav active state
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                const icon = n.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+            });
+            const activeNav = document.getElementById(navId);
+            if (activeNav) {
+                activeNav.classList.add('active');
+                const icon = activeNav.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            }
+
+            // Switch page views
+            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+            const config = NAV_PAGES[navId];
+            if (config) {
+                document.getElementById(config.page).classList.add('active');
+                document.getElementById('page-title').textContent = config.title;
+                document.getElementById('page-subtitle').textContent = config.subtitle;
+            }
+
+            // Page-specific init
+            if (navId === 'nav-reviews') loadAllReviews();
+            if (navId === 'nav-settings') loadSettings();
+        }
+
+        // Attach nav click handlers
+        Object.keys(NAV_PAGES).forEach(navId => {
+            const el = document.getElementById(navId);
+            if (el) {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(navId);
+                });
+            }
+        });
+
+        // "View All" link
+        document.getElementById('btn-view-all').addEventListener('click', function(e) {
+            e.preventDefault();
+            navigateTo('nav-reviews');
+        });
+
+        // Stats cards click handlers to navigate to full reviews page
+        document.getElementById('card-total-reviews').addEventListener('click', () => navigateTo('nav-reviews'));
+        document.getElementById('card-approval-rate').addEventListener('click', () => navigateTo('nav-reviews'));
+        document.getElementById('card-avg-confidence').addEventListener('click', () => navigateTo('nav-reviews'));
+        document.getElementById('card-issues-found').addEventListener('click', () => navigateTo('nav-reviews'));
+
+        /* ============================
+         * HEALTH CHECK
+         * ============================ */
+        let lastHealthData = null;
+        async function checkHealth() {
+            const ollamaDot = document.getElementById('health-ollama');
+            const redisDot = document.getElementById('health-redis');
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                if (!res.ok) throw new Error('Health check failed');
+                const data = await res.json();
+                ollamaDot.className = `health-dot ${data.ollama ? 'ok' : 'err'}`;
+                redisDot.className = `health-dot ${data.dragonfly ? 'ok' : 'err'}`;
+                lastHealthData = data;
+            } catch (e) {
+                ollamaDot.className = 'health-dot err';
+                redisDot.className = 'health-dot err';
+                lastHealthData = null;
+            }
+        }
+
+        /* ============================
+         * LOAD REVIEWS (Dashboard - top 8)
+         * ============================ */
+        let cachedReviews = [];
+        async function loadReviews() {
+            const tbody = document.getElementById('reviews-tbody');
+            try {
+                const res = await fetch(`${API_BASE}/reviews`);
+                if (!res.ok) throw new Error('Failed to load reviews');
+                const reviews = await res.json();
+                cachedReviews = reviews;
+                updateStats(reviews);
+                updateSeverityChart(reviews);
+
+                if (!reviews || reviews.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">
+                        <span class="material-symbols-outlined">inbox</span>
+                        <p>No reviews yet. Trigger one using the Quick Review form!</p>
+                    </td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = reviews.slice(0, 8).map(r => renderReviewRow(r)).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state">
+                    <span class="material-symbols-outlined">cloud_off</span>
+                    <p>Could not load reviews. Is the server running?</p>
+                </td></tr>`;
+            }
+        }
+
+        function renderReviewRow(r) {
+            const approvalRaw = (r.approval || '').toUpperCase();
+            let badgeClass = 'badge-comment', badgeText = approvalRaw;
+            if (approvalRaw.includes('APPROVE') && !approvalRaw.includes('REQUEST')) { badgeClass = 'badge-approve'; badgeText = 'APPROVE'; }
+            else if (approvalRaw.includes('REQUEST')) { badgeClass = 'badge-request'; badgeText = 'CHANGES'; }
+            else { badgeClass = 'badge-comment'; badgeText = 'COMMENT'; }
+
+            const conf = typeof r.confidence === 'number' ? r.confidence.toFixed(2) : (r.confidence || '—');
+            const date = r.date ? formatDate(r.date) : '—';
+            const safeJson = JSON.stringify(r).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            return `<tr onclick="showReviewDetail(${safeJson})">
+                <td class="pr-num">#${r.pr_id || '—'}</td>
+                <td>${r.repo || '—'}</td>
+                <td>${r.author || '—'}</td>
+                <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                <td>${conf}</td>
+                <td style="color:var(--text-muted);font-size:0.75rem;">${date}</td>
+            </tr>`;
+        }
+
+        function formatDate(dateStr) {
+            try {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch { return dateStr; }
+        }
+
+        /* ============================
+         * LOAD ALL REVIEWS (Reviews page)
+         * ============================ */
+        async function loadAllReviews() {
+            const tbody = document.getElementById('all-reviews-tbody');
+            const countLabel = document.getElementById('reviews-count-label');
+            try {
+                const res = await fetch(`${API_BASE}/reviews`);
+                if (!res.ok) throw new Error('Failed to load reviews');
+                const reviews = await res.json();
+                countLabel.textContent = `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`;
+
+                if (!reviews || reviews.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">
+                        <span class="material-symbols-outlined">inbox</span>
+                        <p>No reviews yet.</p>
+                    </td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = reviews.map(r => {
+                    const approvalRaw = (r.approval || '').toUpperCase();
+                    let badgeClass = 'badge-comment', badgeText = approvalRaw;
+                    if (approvalRaw.includes('APPROVE') && !approvalRaw.includes('REQUEST')) { badgeClass = 'badge-approve'; badgeText = 'APPROVE'; }
+                    else if (approvalRaw.includes('REQUEST')) { badgeClass = 'badge-request'; badgeText = 'CHANGES'; }
+                    else { badgeClass = 'badge-comment'; badgeText = 'COMMENT'; }
+
+                    const conf = typeof r.confidence === 'number' ? r.confidence.toFixed(2) : (r.confidence || '—');
+                    const date = r.date ? formatDate(r.date) : '—';
+                    const latency = typeof r.latency_ms === 'number' ? `${(r.latency_ms / 1000).toFixed(1)}s` : '—';
+                    const safeJson = JSON.stringify(r).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                    return `<tr onclick="showReviewDetail(${safeJson})">
+                        <td class="pr-num">#${r.pr_id || '—'}</td>
+                        <td>${r.repo || '—'}</td>
+                        <td>${r.author || '—'}</td>
+                        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                        <td>${conf}</td>
+                        <td>${r.total_issues ?? '—'}</td>
+                        <td style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;">${latency}</td>
+                        <td style="color:var(--text-muted);font-size:0.75rem;">${date}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state">
+                    <span class="material-symbols-outlined">cloud_off</span>
+                    <p>Could not load reviews.</p>
+                </td></tr>`;
+            }
+        }
+
+        /* ============================
+         * LOAD SETTINGS
+         * ============================ */
+        async function loadSettings() {
+            // Health status
+            await checkHealth();
+            document.getElementById('settings-ollama').innerHTML = lastHealthData?.ollama
+                ? '<span style="color:var(--success);">● Online</span>'
+                : '<span style="color:var(--error);">● Offline</span>';
+            document.getElementById('settings-redis').innerHTML = lastHealthData?.dragonfly
+                ? '<span style="color:var(--success);">● Online</span>'
+                : '<span style="color:var(--error);">● Offline</span>';
+
+            try {
+                const res = await fetch(`${API_BASE}/config`);
+                if (!res.ok) throw new Error('Failed to load settings config');
+                const config = await res.json();
+                
+                document.getElementById('settings-api-base').textContent = config.ollama_base_url || API_BASE;
+                document.getElementById('settings-gh-token').textContent = config.github_token_configured ? '•••••••• (Configured)' : 'Not Configured';
+                document.getElementById('settings-code-model').textContent = config.ollama_model_code || '—';
+                document.getElementById('settings-reason-model').textContent = config.ollama_model_reason || '—';
+                document.getElementById('settings-embed-model').textContent = config.ollama_embed_model || '—';
+                document.getElementById('settings-max-tokens').textContent = config.max_context_tokens || '—';
+                document.getElementById('settings-sqlite').textContent = config.sqlite_path || '—';
+                document.getElementById('settings-excel').textContent = config.excel_path || '—';
+                document.getElementById('settings-redis-url').textContent = config.dragonfly_url || '—';
+            } catch (e) {
+                console.error('Error loading config:', e);
+                document.getElementById('settings-api-base').textContent = API_BASE;
+                document.getElementById('settings-gh-token').textContent = 'Error loading config';
+            }
+        }
+
+        /* ============================
+         * UPDATE STATS
+         * ============================ */
+        function updateStats(reviews) {
+            const total = reviews.length;
+            document.getElementById('stat-total').textContent = total.toLocaleString();
+
+            const approved = reviews.filter(r => (r.approval || '').toUpperCase().includes('APPROVE') && !(r.approval || '').toUpperCase().includes('REQUEST')).length;
+            const rate = total > 0 ? ((approved / total) * 100).toFixed(1) : '0.0';
+            document.getElementById('stat-approve').textContent = `${rate}%`;
+
+            const confValues = reviews.filter(r => typeof r.confidence === 'number').map(r => r.confidence);
+            const avgConf = confValues.length > 0 ? (confValues.reduce((a, b) => a + b, 0) / confValues.length).toFixed(2) : '—';
+            document.getElementById('stat-confidence').textContent = avgConf;
+
+            const totalIssues = reviews.reduce((sum, r) => sum + (r.total_issues || 0), 0);
+            document.getElementById('stat-issues').textContent = totalIssues.toLocaleString();
+        }
+
+        /* ============================
+         * SEVERITY CHART
+         * ============================ */
+        function updateSeverityChart(reviews) {
+            const crit = reviews.reduce((s, r) => s + (r.critical_issues || 0), 0);
+            const high = reviews.reduce((s, r) => s + (r.high_issues || 0), 0);
+            const total = reviews.reduce((s, r) => s + (r.total_issues || 0), 0);
+            const med = Math.max(0, total - crit - high);
+            const low = Math.floor(med * 0.4);
+            const medActual = med - low;
+            const maxVal = Math.max(crit, high, medActual, low, 1);
+
+            document.getElementById('sev-crit').textContent = crit;
+            document.getElementById('sev-high').textContent = high;
+            document.getElementById('sev-med').textContent = medActual;
+            document.getElementById('sev-low').textContent = low;
+            document.getElementById('bar-crit').style.width = `${(crit / maxVal) * 100}%`;
+            document.getElementById('bar-high').style.width = `${(high / maxVal) * 100}%`;
+            document.getElementById('bar-med').style.width = `${(medActual / maxVal) * 100}%`;
+            document.getElementById('bar-low').style.width = `${(low / maxVal) * 100}%`;
+        }
+
+        /* ============================
+         * REVIEW DETAIL MODAL
+         * ============================ */
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        function showReviewDetail(review) {
+            const modal = document.getElementById('modal-overlay');
+            document.getElementById('modal-title').textContent = `PR #${review.pr_id || '—'} — ${review.repo || ''}`;
+            
+            // Render basic details first
+            renderModalBody(review);
+            modal.classList.add('active');
+
+            // Query backend for full details (with issues/suggestions list)
+            fetch(`${API_BASE}/reviews/${review.pr_id}`)
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Not found in DB');
+                })
+                .then(fullData => {
+                    renderModalBody(fullData);
+                })
+                .catch(err => {
+                    console.warn('Could not load detailed issues for PR:', review.pr_id, err);
+                });
+        }
+
+        function renderModalBody(review) {
+            const body = document.getElementById('modal-body');
+            const approvalRaw = (review.approval || '').toUpperCase();
+            let approvalHtml = review.approval || '—';
+            if (approvalRaw.includes('APPROVE') && !approvalRaw.includes('REQUEST')) {
+                approvalHtml = '<span style="color:var(--success);">✅ APPROVE</span>';
+            } else if (approvalRaw.includes('REQUEST')) {
+                approvalHtml = '<span style="color:var(--error);">❌ REQUEST_CHANGES</span>';
+            } else {
+                approvalHtml = '<span style="color:var(--warning);">💬 COMMENT</span>';
+            }
+
+            const latencyDisplay = typeof review.latency_ms === 'number' ? `${(review.latency_ms / 1000).toFixed(1)}s (${review.latency_ms.toFixed(0)}ms)` : '—';
+            const confDisplay = typeof review.confidence === 'number' ? (review.confidence <= 1.0 ? `${(review.confidence * 100).toFixed(1)}%` : `${review.confidence.toFixed(1)}%`) : '—';
+
+            const fields = [
+                ['Repository', review.repo],
+                ['Author', review.author],
+                ['Approval', approvalHtml],
+                ['Confidence', confDisplay],
+                ['Critical Issues', review.critical_issues ?? (review.issues ? review.issues.filter(i => i.severity === 'CRITICAL').length : '—')],
+                ['High Issues', review.high_issues ?? (review.issues ? review.issues.filter(i => i.severity === 'HIGH').length : '—')],
+                ['Total Issues', review.total_issues ?? (review.issues ? review.issues.length : '—')],
+                ['Tokens Used', review.tokens_used ? review.tokens_used.toLocaleString() : '—'],
+                ['Latency', latencyDisplay],
+                ['Date', review.date || review.created_at ? formatDate(review.date || review.created_at) : '—'],
+                ['Summary', review.summary || '—'],
+            ];
+
+            let html = fields.map(([label, value]) => `
+                <div class="detail-row">
+                    <span class="detail-label">${label}</span>
+                    <span class="detail-value">${value !== null && value !== undefined ? value : '—'}</span>
+                </div>
+            `).join('');
+
+            // Render specific issues list if present
+            if (review.issues && review.issues.length > 0) {
+                html += `<h3 class="modal-issues-title">Specific Issues (${review.issues.length})</h3>`;
+                html += review.issues.map(issue => {
+                    const sev = (issue.severity || '').toLowerCase();
+                    const cat = issue.category || 'GENERAL';
+                    const lineInfo = issue.line_number ? `:L${issue.line_number}` : '';
+                    return `
+                        <div class="modal-issue-card">
+                            <div class="modal-issue-header">
+                                <span class="modal-issue-path">${issue.file_path}${lineInfo}</span>
+                                <div class="modal-issue-meta">
+                                    <span class="badge-sev ${sev}">${issue.severity}</span>
+                                    <span style="font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;font-family:monospace;">${cat}</span>
+                                </div>
+                            </div>
+                            <div class="modal-issue-desc">${issue.message}</div>
+                            ${issue.suggestion ? `<div class="modal-issue-sug">${issue.suggestion}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } else if (review.issues) {
+                html += `<div style="margin-top:1.5rem;color:var(--text-muted);font-size:0.85rem;text-align:center;">No line-specific issues flagged by review.</div>`;
+            }
+
+            // Render general suggestions if present
+            if (review.suggestions && review.suggestions.length > 0) {
+                html += `<h3 class="modal-issues-title">General Suggestions</h3>`;
+                html += review.suggestions.map(sug => `
+                    <div class="modal-sug-item">
+                        <span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);margin-top:2px;">lightbulb</span>
+                        <span>${sug}</span>
+                    </div>
+                `).join('');
+            }
+
+            body.innerHTML = html;
+        }
+
+        // Close modal handlers
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.getElementById('modal-close-x').addEventListener('click', closeModal);
+        document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.getElementById('notif-panel').classList.remove('active');
+            }
+        });
+
+        /* ============================
+         * SUBMIT REVIEW (shared logic)
+         * ============================ */
+        async function submitReview(repoInput, prInput, btn) {
+            const repo = repoInput.value.trim();
+            const prNum = parseInt(prInput.value, 10);
+
+            if (!repo || !prNum || prNum < 1) {
+                showToast('Please enter a valid repository and PR number.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span><span>Submitting...</span>';
+
+            try {
+                const res = await fetch(`${API_BASE}/review/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repo: repo, pr_number: prNum })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Review queued for ${repo} PR #${prNum}!`, 'success');
+                    addNotification(`Review queued: ${repo} PR #${prNum}`, 'rocket_launch');
+                    // Poll for completion
+                    pollForReviewCompletion(repo, prNum);
+                } else {
+                    showToast(data.detail || 'Failed to trigger review.', 'error');
+                    addNotification(`Review failed: ${data.detail || 'Unknown error'}`, 'error');
+                }
+            } catch (err) {
+                showToast('Network error. Is the server running?', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Start Review</span><span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>';
+            }
+        }
+
+        // Poll for review completion by checking /reviews for a new entry
+        function pollForReviewCompletion(repo, prNum) {
+            const startCount = cachedReviews.length;
+            let polls = 0;
+            const maxPolls = 30; // max 30 polls × 5s = 150s timeout
+            const pollInterval = setInterval(async () => {
+                polls++;
+                try {
+                    const res = await fetch(`${API_BASE}/reviews`);
+                    if (res.ok) {
+                        const reviews = await res.json();
+                        // Check if there's a new review for this repo/PR
+                        const hasNew = reviews.length > startCount || reviews.some(r =>
+                            r.repo === repo && r.pr_id === prNum &&
+                            (!cachedReviews.some(c => c.date === r.date && c.repo === r.repo && c.pr_id === r.pr_id))
+                        );
+                        if (hasNew) {
+                            clearInterval(pollInterval);
+                             showToast(`Review completed for ${repo} PR #${prNum}!`, 'success');
+                             const newReview = reviews.find(r => r.repo === repo && r.pr_id === prNum);
+                             addNotification(`Review completed: ${repo} PR #${prNum}`, 'check_circle', newReview);
+                            cachedReviews = reviews;
+                            updateStats(reviews);
+                            updateSeverityChart(reviews);
+                            document.getElementById('reviews-tbody').innerHTML = reviews.slice(0, 8).map(r => renderReviewRow(r)).join('');
+                            // Also refresh the all-reviews page if visible
+                            if (document.getElementById('page-reviews').classList.contains('active')) {
+                                loadAllReviews();
+                            }
+                            return;
+                        }
+                    }
+                } catch (e) { /* ignore polling errors */ }
+
+                if (polls >= maxPolls) {
+                    clearInterval(pollInterval);
+                    showToast(`Review is taking longer than expected. Check back soon.`, 'info');
+                    addNotification(`Review timeout: ${repo} PR #${prNum} — still processing`, 'schedule');
+                    loadReviews(); // Final refresh attempt
+                }
+            }, 5000);
+        }
+
+        // Dashboard Quick Review form
+        document.getElementById('review-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitReview(
+                document.getElementById('input-repo'),
+                document.getElementById('input-pr'),
+                document.getElementById('btn-review')
+            );
+        });
+
+        // Trigger Review page form
+        document.getElementById('review-form-full').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitReview(
+                document.getElementById('input-repo-full'),
+                document.getElementById('input-pr-full'),
+                document.getElementById('btn-review-full')
+            );
+        });
+
+        /* ============================
+         * AUTO-PARSE GITHUB URLs
+         * ============================ */
+        function setupUrlParser(repoInputId, prInputId) {
+            document.getElementById(repoInputId).addEventListener('input', function(e) {
+                const val = e.target.value.trim();
+                if (val.startsWith('http') || val.includes('github.com')) {
+                    const match = val.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/);
+                    if (match) {
+                        e.target.value = `${match[1]}/${match[2]}`;
+                        document.getElementById(prInputId).value = match[3];
+                        showToast('Parsed Repository and PR Number from URL!', 'success');
+                    }
+                }
+            });
+        }
+        setupUrlParser('input-repo', 'input-pr');
+        setupUrlParser('input-repo-full', 'input-pr-full');
+
+        /* ============================
+         * LOGO CLICK = Home
+         * ============================ */
+        document.querySelector('.logo-icon').addEventListener('click', function() {
+            navigateTo('nav-dashboard');
+        });
+
+        /* ============================
+         * INITIALIZATION
+         * ============================ */
+        checkHealth();
+        loadReviews();
+        addNotification('Dashboard loaded. System health check in progress...', 'info');
+
+        // Periodic refresh
+        setInterval(checkHealth, 30000);
+        setInterval(loadReviews, 60000);
+    </script>
+</body>
+</html>

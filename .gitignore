@@ -1,0 +1,9 @@
+# System files
+.DS_Store
+
+# CodeLensAI local settings & files
+CodeLensAI/.env
+CodeLensAI/.venv/
+CodeLensAI/.pytest_cache/
+CodeLensAI/codelens_ai.egg-info/
+CodeLensAI/data/

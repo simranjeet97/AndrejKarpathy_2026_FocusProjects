@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codelens-ai"
+version = "0.1.0"
+description = "CodeLens AI project"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "PyGithub",
+    "chromadb",
+    "redis",
+    "langgraph",
+    "langchain-core",
+    "dspy-ai",
+    "sentence-transformers",
+    "ollama",
+    "openpyxl",
+    "pandas",
+    "pydantic",
+    "pydantic-settings",
+    "numpy",
+    "tiktoken",
+    "rank-bm25",
+    "httpx",
+    "python-dotenv",
+    "aiosqlite",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
