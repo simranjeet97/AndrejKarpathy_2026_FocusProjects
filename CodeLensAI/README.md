@@ -41,9 +41,10 @@ Harvester          - Code model      - GitHub API (inline comments)
    ```bash
    docker compose up -d
    ```
-2. **Ingest Documentation**: Add architectural guidelines and standards into ChromaDB:
+2. **Ingest Documentation**: Add architectural guidelines, coding standards, or PR examples into ChromaDB (replace paths with your actual folders):
    ```bash
-   python3 -m codelens.scripts.ingest
+   python3 -m codelens.scripts.ingest --source data/arch_docs --type arch_doc
+   python3 -m codelens.scripts.ingest --source data/standards --type standard
    ```
 3. **Configure GitHub Webhook**: Deploy the FastAPI server and point a GitHub repository webhook (`/webhook/github`) with the `pull_request` event selected to your FastAPI server URL.
 
