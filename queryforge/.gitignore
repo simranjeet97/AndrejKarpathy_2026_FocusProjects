@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Unit test / coverage reports
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+.cache
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDEs and editors (excluding needed settings)
+.idea/
+.project
+.pydevproject
+.settings/
+*.launch
+*.sublime-workspace
+
+# Local database files
+queryforge.db
+queryforge.db-journal
+queryforge.db-wal
+queryforge.db-shm
+
+# Local generated artifacts (charts)
+data/charts/*.png

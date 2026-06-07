@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueryForge — Multi-Tool Research Dashboard</title>
+  <!-- Google Fonts: Space Grotesk & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Mesh gradients for background depth -->
+  <div class="mesh-bg"></div>
+
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="logo-icon">▲</span>
+        <h1>QUERY<span>FORGE</span></h1>
+        <span class="logo-subtext">Multi-Tool Research HUD</span>
+      </div>
+      
+      <div class="health-monitoring">
+        <div class="status-indicator" id="status-api">
+          <span class="indicator-dot"></span>
+          <span class="indicator-label">API</span>
+        </div>
+        <div class="status-indicator" id="status-db">
+          <span class="indicator-dot"></span>
+          <span class="indicator-label">DATABASE</span>
+        </div>
+        <div class="status-indicator" id="status-cache">
+          <span class="indicator-dot"></span>
+          <span class="indicator-label">CACHE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="dashboard-main">
+      
+      <!-- Sidebar Panel -->
+      <aside class="sidebar-panel">
+        
+        <!-- Action Control: Clear Cache -->
+        <section class="sidebar-section control-actions-section">
+          <h2>CONTROLS</h2>
+          <button id="btn-clear-cache" class="btn btn-secondary btn-full">
+            <span class="btn-icon">⚡</span> CLEAR CACHE
+          </button>
+        </section>
+
+        <!-- PDF Document Ingestion Widget -->
+        <section class="sidebar-section pdf-ingestion-section">
+          <h2>PDF INGESTION</h2>
+          <div class="pdf-drop-zone" id="pdf-drop-zone">
+            <span class="drop-zone-icon">⤓</span>
+            <span class="drop-zone-text">Drag & Drop PDF or Click</span>
+            <input type="file" id="pdf-file-input" accept="application/pdf" hidden>
+          </div>
+          
+          <!-- PDF Processing Result Panel -->
+          <div id="pdf-result-card" class="glass-card pdf-result-card hidden">
+            <div class="pdf-result-header">
+              <span id="pdf-filename" class="pdf-title">report.pdf</span>
+              <span id="pdf-pages" class="badge badge-yellow">12 pages</span>
+            </div>
+            <div class="pdf-result-summary">
+              <h3>Executive Summary</h3>
+              <p id="pdf-summary-text">Processing document...</p>
+            </div>
+            <div class="pdf-result-bullets">
+              <h3>Key Findings</h3>
+              <ul id="pdf-bullets-list"></ul>
+            </div>
+            <div class="pdf-result-meta">
+              <span>Tokens: <strong id="pdf-tokens">0</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tool Registry / Statistics -->
+        <section class="sidebar-section tools-section">
+          <h2>TOOL REGISTRY <span class="badge badge-red" id="tools-count">0</span></h2>
+          <div class="tools-list" id="tools-list">
+            <!-- Dynamically populated -->
+            <div class="tool-skeleton">Loading registry...</div>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- Main Workspace -->
+      <section class="workspace-panel">
+        
+        <!-- Query Input Card -->
+        <div class="glass-card query-card">
+          <div class="card-header">
+            <h2>RESEARCH QUERY BUILDER</h2>
+            <span class="card-subtitle">Ask the agent to research, analyze, and generate metrics/charts.</span>
+          </div>
+          <div class="query-input-wrapper">
+            <textarea id="query-input" placeholder="e.g., Find our highest churn customer segment and compare with industry trends..." rows="3"></textarea>
+            <button id="btn-run-query" class="btn btn-primary">
+              FORGE QUERY <span class="btn-icon-right">➔</span>
+            </button>
+          </div>
+          <div class="quick-examples">
+            <span class="example-label">Try:</span>
+            <button class="btn-example">Find our highest churn customer segment and compare with industry trends</button>
+            <button class="btn-example">What is our current monthly recurring revenue (MRR) for the Enterprise segment compared to last month?</button>
+            <button class="btn-example">Generate a chart of customer counts by segment for the past 6 months</button>
+          </div>
+        </div>
+
+        <!-- Query Execution Pipeline Stepper -->
+        <div id="pipeline-card" class="glass-card pipeline-card hidden">
+          <div class="card-header">
+            <h2>AGENT EXECUTION TIMELINE</h2>
+            <div class="pipeline-status">
+              <span class="status-pulse-dot"></span>
+              <span id="pipeline-status-text">Planning execution sequence...</span>
+            </div>
+          </div>
+          <div class="timeline" id="pipeline-steps">
+            <!-- Dynamic stepper items -->
+          </div>
+        </div>
+
+        <!-- Agent Response Card -->
+        <div id="response-card" class="glass-card response-card hidden">
+          <div class="card-header border-bottom">
+            <div class="response-title-area">
+              <h2>SYNTHESIZED INSIGHTS</h2>
+              <span class="badge badge-yellow" id="latency-badge">0.0s</span>
+            </div>
+          </div>
+          <div class="response-body">
+            <div class="answer-content" id="response-answer">
+              <!-- Synthesized answer markdown rendered here -->
+            </div>
+            
+            <!-- Collapsible Sources List -->
+            <details id="sources-details" class="sources-details">
+              <summary>View Data Sources & Citing References</summary>
+              <div class="sources-content">
+                <ul id="response-sources"></ul>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Chart Output Gallery -->
+        <div id="charts-card" class="glass-card charts-card hidden">
+          <div class="card-header">
+            <h2>ANALYTICAL VISUALIZATIONS</h2>
+            <span class="card-subtitle">Generated Cohort / Trend Analytics</span>
+          </div>
+          <div class="charts-gallery" id="charts-gallery">
+            <!-- Dynamic images loaded from /charts/{filename} -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>QueryForge Research Engine v0.1.0</span>
+      <span>•</span>
+      <span>Offline-first Multi-Tool Architecture</span>
+    </footer>
+  </div>
+
+  <!-- Dialog: Cache cleared notification -->
+  <dialog id="dialog-notification" class="notification-dialog">
+    <form method="dialog">
+      <div class="dialog-content">
+        <h3 id="dialog-title">Notification</h3>
+        <p id="dialog-message">Message text...</p>
+        <button class="btn btn-primary">DISMISS</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- JS Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

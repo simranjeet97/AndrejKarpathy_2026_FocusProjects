@@ -1,0 +1,50 @@
+[project]
+name = "queryforge"
+version = "0.1.0"
+description = "QueryForge — Multi-Tool Research Agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-adk",
+    "ollama",
+    "aiosqlite",
+    "sqlalchemy[asyncio]",
+    "stripe",
+    "notion-client",
+    "apscheduler",
+    "matplotlib",
+    "plotly",
+    "kaleido",
+    "pypdf2",
+    "pymupdf",
+    "httpx",
+    "aiohttp",
+    "pydantic",
+    "pydantic-settings",
+    "fastapi",
+    "uvicorn[standard]",
+    "redis",
+    "pandas",
+    "numpy",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+extraPaths = [
+    ".",
+    "src",
+    "/opt/homebrew/lib/python3.10/site-packages",
+    "/Users/simranjeetsingh/Library/Python/3.10/lib/python/site-packages",
+    "/usr/local/lib/python3.10/site-packages"
+]
+

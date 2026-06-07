@@ -42,3 +42,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["codelens*"]
+
+[tool.pyright]
+extraPaths = ["."]
+
