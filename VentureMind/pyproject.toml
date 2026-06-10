@@ -1,0 +1,44 @@
+[project]
+name = "venturemind"
+version = "0.1.0"
+description = "VentureMind — Startup Due Diligence Multi-Agent System"
+requires-python = ">=3.10"
+dependencies = [
+    "google-adk",
+    "ollama",
+    "asyncpg",
+    "sqlalchemy[asyncio]",
+    "redis",
+    "httpx",
+    "aiohttp",
+    "pydantic",
+    "pydantic-settings",
+    "fastapi",
+    "uvicorn[standard]",
+    "pypdf2",
+    "pymupdf",
+    "pdfplumber",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "plotly",
+    "kaleido",
+    "beautifulsoup4",
+    "lxml",
+    "python-docx",
+    "jinja2",
+    "tiktoken",
+    "python-dotenv",
+    "aiosqlite",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
