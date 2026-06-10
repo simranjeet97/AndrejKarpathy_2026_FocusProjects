@@ -54,12 +54,12 @@ async def run_pipeline(startup_name: str):
             f.write(markdown_content)
         logger.info(f"Saved Markdown report to: {md_filename}")
 
-        # Try rendering DOCX/PDF
+        # Try rendering DOCX
         try:
-            docx_filename = renderer.render_pdf(report)
-            logger.info(f"Saved Docx/PDF report to: {docx_filename}")
+            docx_filename = renderer.render_docx(report)
+            logger.info(f"Saved Word/DOCX report to: {docx_filename}")
         except Exception as docx_err:
-            logger.warning(f"Failed to generate Word/PDF report: {docx_err}")
+            logger.warning(f"Failed to generate Word/DOCX report: {docx_err}")
 
         # Run 2: Hot start (testing shared memory cache)
         logger.info("\n--- Run 2: Hot Start (testing Dragonfly/SQLite shared memory cache) ---")

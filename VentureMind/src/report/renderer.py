@@ -66,11 +66,11 @@ class ReportRenderer:
             f"{metadata_table}\n"
         )
 
-    def render_pdf(self, report: DiligenceReport) -> str:
-        """Generate DOCX file (representing PDF report layout format) and return its filepath."""
+    def render_docx(self, report: DiligenceReport) -> str:
+        """Generate DOCX file and return its filepath."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_name = report.startup_name.lower().replace(' ', '_')
-        filepath = os.path.join(self.output_dir, f"{safe_name}_{timestamp}.pdf")
+        filepath = os.path.join(self.output_dir, f"{safe_name}_{timestamp}.docx")
         
         doc = docx.Document()
         doc.add_heading(f"VentureMind Due Diligence Report: {report.startup_name}", 0)
