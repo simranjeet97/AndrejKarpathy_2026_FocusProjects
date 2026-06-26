@@ -1,48 +1,112 @@
 import asyncio
 import re
 import urllib.parse
+import logging
 import httpx
 from ..search.web_search import search_web, fetch_page_text, validate_url
 
+logger = logging.getLogger("VentureMind.FinancialTools")
+
+# Share a single connection-pooled AsyncClient for financial tool requests
+_client = None
+
+def get_financial_client() -> httpx.AsyncClient:
+    """Retrieve or initialize the shared pooled async HTTP client for financial tools."""
+    global _client
+    if _client is None or _client.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=5, max_connections=20)
+        _client = httpx.AsyncClient(timeout=10.0, limits=limits)
+    return _client
+
 async def get_sec_edgar_filings(company_name: str) -> list[dict]:
-    """Retrieve filing documents from the SEC EDGAR search index if the company matches registered records."""
-    default_res = []
-    # SEC EDGAR requires a User-Agent header following standard formats
-    headers = {"User-Agent": "VentureMind DueDiligence contact@venturemind.ai"}
-    query_quoted = urllib.parse.quote(f'"{company_name}"')
-    url = f"https://efts.sec.gov/LATEST/search-index?q={query_quoted}&dateRange=custom&startdt=2020-01-01"
-
+    """Retrieve filing documents from the SEC EDGAR search index with fallback web search."""
+    headers = {
+        "User-Agent": "VentureMind DueDiligence contact@venturemind.ai",
+        "Content-Type": "application/json"
+    }
+    
+    # Attempt 1: POST request to EFTS search index (modern Elasticsearch API)
+    url_post = "https://efts.sec.gov/LATEST/search-index"
+    payload = {
+        "q": f'"{company_name}"',
+        "dateRange": "custom",
+        "startdt": "2020-01-01"
+    }
+    
+    client = get_financial_client()
+    
     try:
-        validate_url(url)
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                filings = []
-                hits = data.get("hits", {}).get("hits", [])
-                for hit in hits:
-                    source = hit.get("_source", {})
-                    form_type = source.get("form", "")
-                    filed_at = source.get("file_date", "")
-                    cik = source.get("cik", "")
-                    adsh = source.get("adsh", "").replace("-", "")
-                    filename = source.get("filename", "")
-                    doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{adsh}/{filename}"
-                    desc = source.get("title", "") or source.get("root_form", "")
-                    filings.append({
-                        "form_type": form_type,
-                        "filed_at": filed_at,
-                        "url": doc_url,
-                        "description": desc
-                    })
-                return filings
-    except Exception:
-        pass
+        response = await client.post(url_post, json=payload, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            hits = data.get("hits", {}).get("hits", [])
+            if hits:
+                return _parse_efts_hits(hits)
+    except Exception as e:
+        logger.warning(f"SEC EFTS POST request failed: {e}. Trying GET...")
 
-    return default_res
+    # Attempt 2: GET request to EFTS search index (fallback endpoint)
+    query_quoted = urllib.parse.quote(f'"{company_name}"')
+    url_get = f"https://efts.sec.gov/LATEST/search-index?q={query_quoted}&dateRange=custom&startdt=2020-01-01"
+    try:
+        validate_url(url_get)
+        response = await client.get(url_get, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            hits = data.get("hits", {}).get("hits", [])
+            if hits:
+                return _parse_efts_hits(hits)
+    except Exception as e:
+        logger.warning(f"SEC EFTS GET request failed: {e}. Falling back to web search scraping.")
+
+    # Attempt 3: Fallback web search scrape of SEC.gov filings
+    filings = []
+    try:
+        web_results = await search_web(f"site:sec.gov \"{company_name}\" filing", max_results=5)
+        for r in web_results:
+            title = r.get("title", "")
+            snippet = r.get("snippet", "")
+            
+            # Extract form type (e.g. S-1, 10-K, 10-Q) from snippet/title
+            form_match = re.search(r"\b(10-K|10-Q|S-1|8-K|Form\s+4)\b", f"{title} {snippet}", re.IGNORECASE)
+            form_type = form_match.group(1).upper() if form_match else "Other"
+            
+            filings.append({
+                "form_type": form_type,
+                "filed_at": "unknown",
+                "url": r.get("url", ""),
+                "description": title
+            })
+    except Exception as fallback_err:
+        logger.error(f"Fallback filings search failed: {fallback_err}")
+
+    return filings
+
+def _parse_efts_hits(hits: list) -> list[dict]:
+    """Helper to parse raw elasticsearch hits into standard due diligence filing dictionaries."""
+    filings = []
+    for hit in hits:
+        source = hit.get("_source", {})
+        form_type = source.get("form", "")
+        filed_at = source.get("file_date", "")
+        cik = source.get("cik", "")
+        adsh = source.get("adsh", "").replace("-", "")
+        filename = source.get("filename", "")
+        
+        # Build standard URL to access the document in EDGAR archive
+        doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{adsh}/{filename}"
+        desc = source.get("title", "") or source.get("root_form", "")
+        
+        filings.append({
+            "form_type": form_type,
+            "filed_at": filed_at,
+            "url": doc_url,
+            "description": desc
+        })
+    return filings
 
 async def get_crunchbase_signals(company_name: str) -> dict:
-    """Gather funding, valuation, and scaling signals from Crunchbase profile search snippets."""
+    """Gather funding, valuation, and employee signals from Crunchbase profile search snippets."""
     default_res = {
         "funding_mentions": [],
         "employee_mentions": [],
@@ -71,8 +135,8 @@ async def get_crunchbase_signals(company_name: str) -> dict:
 
         default_res["funding_mentions"] = list(set(funding_mentions))
         default_res["employee_mentions"] = list(set(employee_mentions))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Crunchbase signals fetch failed for {company_name}: {e}")
 
     return default_res
 
@@ -99,8 +163,8 @@ async def get_pitchbook_signals(company_name: str) -> dict:
                     funding_mentions.append(sent.strip())
 
         default_res["funding_mentions"] = list(set(funding_mentions))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"PitchBook signals fetch failed for {company_name}: {e}")
 
     return default_res
 
@@ -155,13 +219,13 @@ async def estimate_revenue(company_name: str, industry: str) -> dict:
                 "confidence": "medium" if len(sources) > 1 else "low",
                 "sources": list(set(sources))
             }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Revenue estimation failed for {company_name}: {e}")
 
     return default_res
 
 async def get_job_posting_signals(company_name: str) -> dict:
-    """Check active recruitment listings as a indicator for operational expansion and cash burn."""
+    """Check active recruitment listings as an indicator for operational expansion and cash burn."""
     default_res = {
         "active_roles_estimate": 0,
         "hiring_signal": "stable",
@@ -198,7 +262,7 @@ async def get_job_posting_signals(company_name: str) -> dict:
             "hiring_signal": hiring_sig,
             "source": results[0].get("url", "") if results else ""
         }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Hiring signal tracking failed for {company_name}: {e}")
 
     return default_res

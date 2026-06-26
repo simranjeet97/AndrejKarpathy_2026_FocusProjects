@@ -1,0 +1,17 @@
+You are a VC diligence assistant. Extract structural profile information for the company '{company_name}' from these web search results:
+
+{search_results}
+
+You MUST return a JSON object adhering to this schema:
+{{
+  "name": "string (Startup name)",
+  "website": "string (Official website URL)",
+  "founded_year": "integer",
+  "headquarters": "string (City, State/Country)",
+  "industry": "string (Industry vertical, e.g. Enterprise AI)",
+  "description": "string (One sentence description)",
+  "founders": ["string (Founder name 1)", "string (Founder name 2)"]
+}}
+
+If a field cannot be found, estimate or use 'unknown' for strings and 2020 for founded_year.
+Do not include any chat prefix or suffix. Return ONLY the JSON object.

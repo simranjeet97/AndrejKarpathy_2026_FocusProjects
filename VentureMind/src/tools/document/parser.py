@@ -1,12 +1,26 @@
 import os
 import re
 import tempfile
+import logging
 from typing import Any
 import fitz  # PyMuPDF
 import httpx
 import pdfplumber
 from bs4 import BeautifulSoup
 from ..search.web_search import validate_url
+
+logger = logging.getLogger("VentureMind.DocumentParser")
+
+# Share a single connection-pooled AsyncClient for parser downloads
+_client = None
+
+def get_parser_client() -> httpx.AsyncClient:
+    """Retrieve or initialize the shared pooled async HTTP client for document parser."""
+    global _client
+    if _client is None or _client.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=5, max_connections=20)
+        _client = httpx.AsyncClient(timeout=30.0, limits=limits)
+    return _client
 
 class DocumentParser:
     """Utility class to parse and extract text and tables from PDFs, HTML, and web documents."""
@@ -40,11 +54,11 @@ class DocumentParser:
         # Create a temporary file to write binary contents
         temp_file_fd, temp_file_path = tempfile.mkstemp(suffix=".pdf")
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, headers=headers, follow_redirects=True)
-                response.raise_for_status()
-                with os.fdopen(temp_file_fd, "wb") as f:
-                    f.write(response.content)
+            client = get_parser_client()
+            response = await client.get(url, headers=headers, follow_redirects=True)
+            response.raise_for_status()
+            with os.fdopen(temp_file_fd, "wb") as f:
+                f.write(response.content)
 
             return self.parse_pdf(temp_file_path)
         finally:
@@ -109,19 +123,23 @@ class DocumentParser:
                     start += chunk_size - overlap
                 continue
 
+            # Determine separating whitespace length (1 space if not empty)
+            sep_len = 1 if current_chunk else 0
+
             # Check if sentence fits in the current chunk
-            if current_length + sentence_len + (1 if current_chunk else 0) <= chunk_size:
+            if current_length + sentence_len + sep_len <= chunk_size:
                 current_chunk.append(sentence)
-                current_length += sentence_len + (1 if current_chunk else 0)
+                current_length += sentence_len + sep_len
             else:
                 chunks.append(" ".join(current_chunk))
                 # Add sentences to maintain overlap
                 overlap_chunk = []
                 overlap_len = 0
                 for sent in reversed(current_chunk):
-                    if overlap_len + len(sent) + (1 if overlap_chunk else 0) <= overlap:
+                    s_sep_len = 1 if overlap_chunk else 0
+                    if overlap_len + len(sent) + s_sep_len <= overlap:
                         overlap_chunk.insert(0, sent)
-                        overlap_len += len(sent) + (1 if overlap_chunk else 0)
+                        overlap_len += len(sent) + s_sep_len
                     else:
                         break
                 current_chunk = overlap_chunk + [sentence]

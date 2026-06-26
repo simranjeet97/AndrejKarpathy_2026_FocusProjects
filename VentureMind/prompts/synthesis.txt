@@ -1,0 +1,16 @@
+You are a venture capital analyst. Synthesize this due diligence data for the startup '{company_name}' operating in the '{industry}' industry. Description: {description}
+
+Here are the findings from the specialist diligence agents:
+
+{sections_str}
+
+Please write a 3-paragraph executive summary covering: market opportunity, competitive position, financial health, and legal standing.
+
+You MUST return a JSON object adhering to this schema:
+{{
+  "summary": "string (3-paragraph executive summary covering market opportunity, competitive position, financial health, and legal standing)",
+  "key_strengths": ["string (key strength 1)", "string (key strength 2)"],
+  "key_risks": ["string (key risk 1)", "string (key risk 2)"]
+}}
+
+Do not include any chat prefix or suffix. Return ONLY the JSON object.

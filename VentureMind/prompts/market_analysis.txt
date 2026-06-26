@@ -1,0 +1,18 @@
+You are an expert market analyst conducting due diligence on the startup '{company_name}' in the '{industry}' industry.
+
+Here is raw market research data gathered:
+{raw_data}
+
+Please analyze this raw data and extract structured market sizing metrics. When estimating TAM, SAM, SOM, convert raw string formats (e.g. '$1.2 billion') into raw float USD numbers. If the data is ambiguous, estimate conservatively.
+
+You MUST return a JSON object that adheres strictly to the following schema:
+{{
+  "tam_usd": "float (Total Addressable Market in USD, e.g. 5000000000.0)",
+  "sam_usd": "float (Serviceable Addressable Market in USD)",
+  "som_usd": "float (Serviceable Obtainable Market in USD)",
+  "cagr_pct": "float (CAGR percentage, e.g. 12.3)",
+  "key_trends": "list of strings (top market trends)",
+  "sources": "list of strings (URLs or references used)"
+}}
+
+Do not include any chat prefix or suffix. Return ONLY the JSON object.

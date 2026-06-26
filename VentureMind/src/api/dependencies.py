@@ -52,6 +52,7 @@ def get_ollama_client() -> OllamaClient:
         analyst_model=settings.OLLAMA_ANALYST_MODEL,
         summary_model=settings.OLLAMA_SUMMARY_MODEL,
         embed_model=settings.OLLAMA_EMBED_MODEL,
+        timeout=float(settings.AGENT_TIMEOUT_SECONDS),
     )
 
 

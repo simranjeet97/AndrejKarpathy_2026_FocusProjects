@@ -141,24 +141,13 @@ class CompetitorAgent:
             }
             competitors_list.append(c_dict)
 
-        schema = {
-            "positioning_summary": "string (exactly 2 sentences summarizing the startup's positioning and competitive landscape)",
-            "differentiation_score": "float (0.0 to 1.0 representing how unique the startup's offering is)",
-            "key_advantages": "list of strings (reasons for the differentiation)"
-        }
-
-        return (
-            f"You are a VC analyst conducting due diligence on the startup '{startup.name}'.\n"
-            f"Industry: {startup.industry}\n"
-            f"Description: {startup.description}\n\n"
-            f"Here are the identified competitors and their profiles:\n"
-            f"{json.dumps(competitors_list, indent=2)}\n\n"
-            f"Analyze the startup's competitive positioning relative to these competitors. "
-            f"Identify the startup's main differentiation, assess their competitive moat, and write "
-            f"a 2-sentence positioning summary.\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "competitor_positioning",
+            company_name=startup.name,
+            industry=startup.industry,
+            description=startup.description,
+            competitors_list=json.dumps(competitors_list, indent=2)
         )
 
     def _score_differentiation(
@@ -188,10 +177,10 @@ class CompetitorAgent:
             return None
         try:
             val = float(match.group(1))
-            unit = match.group(2).lower() if match.group(2) else ""
-            if "billion" in unit or "b" in unit:
+            unit = match.group(2).strip().lower() if match.group(2) else ""
+            if unit in ("billion", "b"):
                 return val * 1_000_000_000
-            elif "million" in unit or "m" in unit:
+            elif unit in ("million", "m"):
                 return val * 1_000_000
             return val
         except Exception:

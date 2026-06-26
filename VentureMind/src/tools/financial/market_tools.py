@@ -1,12 +1,25 @@
 import asyncio
 import re
 import urllib.parse
+import logging
 import httpx
 from ..search.web_search import search_web, fetch_page_text, validate_url
 
+logger = logging.getLogger("VentureMind.MarketTools")
+
+# Share a single connection-pooled AsyncClient for market tools
+_client = None
+
+def get_market_client() -> httpx.AsyncClient:
+    """Retrieve or initialize the shared pooled async HTTP client for market tools."""
+    global _client
+    if _client is None or _client.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=5, max_connections=20)
+        _client = httpx.AsyncClient(timeout=15.0, limits=limits)
+    return _client
+
 async def get_industry_market_size(industry: str) -> dict:
     """Gather industry market size (TAM, SAM, SOM) data by scraping DuckDuckGo results."""
-    # Using TAM SAM SOM (industry standard terms)
     query = f"{industry} market size TAM SAM SOM 2024 billion"
     default_result = {"tam_estimate": "Not found", "sources": [], "raw_snippets": []}
 
@@ -49,11 +62,12 @@ async def get_industry_market_size(industry: str) -> dict:
             "sources": sources,
             "raw_snippets": raw_snippets
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Market sizing failed for {industry}: {e}")
         return default_result
 
 async def get_market_growth_rate(industry: str) -> dict:
-    """Retrieve market Compound Annual Growth Rate (CAGR) and forecast periods."""
+    """Retrieve market Compound Annual Growth Rate (CAGR) and forecast periods with contextual percentage matching."""
     query = f"{industry} market CAGR growth rate forecast 2024 2025"
     default_result = {"cagr_estimate": "Not found", "forecast_period": "2024-2030 (Estimated)", "sources": []}
 
@@ -68,24 +82,35 @@ async def get_market_growth_rate(industry: str) -> dict:
 
         sources = []
         found_estimates = []
-        cagr_pattern = r'[\d.]+\s*%'
+        growth_keywords = ["cagr", "compound annual", "growth rate", "grow at", "cagr of", "projected growth", "growth of"]
 
         for url, text in zip(urls, pages_text):
             if text.startswith("Error fetching page content:"):
                 continue
             
-            matches = re.findall(cagr_pattern, text)
-            if matches:
-                found_estimates.extend(matches)
+            # Split text into sentences to isolate contextual scope
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            has_match_on_page = False
+            for sent in sentences:
+                sent_lower = sent.lower()
+                # Enforce contextual match (CAGR related)
+                if any(kw in sent_lower for kw in growth_keywords):
+                    match = re.search(r'([\d.]+)\s*%', sent)
+                    if match:
+                        found_estimates.append(f"{match.group(1)}%")
+                        has_match_on_page = True
+            
+            if has_match_on_page:
                 sources.append(url)
 
         cagr_estimate = found_estimates[0] if found_estimates else "Not found"
         return {
             "cagr_estimate": cagr_estimate,
             "forecast_period": "2024-2030 (Estimated)",
-            "sources": sources
+            "sources": list(set(sources))
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Market growth rate retrieval failed for {industry}: {e}")
         return default_result
 
 async def get_market_trends(industry: str, max_trends: int = 5) -> list[str]:
@@ -130,7 +155,8 @@ async def get_market_trends(industry: str, max_trends: int = 5) -> list[str]:
                             break
 
         return trends[:max_trends]
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Market trends retrieval failed for {industry}: {e}")
         return []
 
 async def get_wikipedia_industry_overview(industry: str) -> str:
@@ -140,11 +166,11 @@ async def get_wikipedia_industry_overview(industry: str) -> str:
         wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(formatted_industry)}"
         validate_url(wiki_url)
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(wiki_url)
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("extract", "")
-    except Exception:
-        pass
+        client = get_market_client()
+        response = await client.get(wiki_url)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("extract", "")
+    except Exception as e:
+        logger.warning(f"Wikipedia overview fetch failed for {industry}: {e}")
     return ""

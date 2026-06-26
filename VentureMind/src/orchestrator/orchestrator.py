@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from ..models.domain import (
     StartupProfile,
     AgentResult,
@@ -33,15 +33,36 @@ class DiligenceOrchestrator:
         self.settings = settings
         self.ollama_client = None
         for agent in agents.values():
-            if hasattr(agent, "ollama_client"):
+            if hasattr(agent, "ollama_client") and agent.ollama_client is not None:
                 self.ollama_client = agent.ollama_client
                 break
 
     async def run(self, startup_name: str) -> DiligenceReport:
         """Full orchestration: profile → plan → execute → summarize → report."""
-        logger = logging.getLogger("orchestrator")
+        logger = logging.getLogger("VentureMind.Orchestrator")
         start_time = time.monotonic()
         logger.info(f"Starting orchestration pipeline for startup: {startup_name}")
+
+        # Pre-flight health check for Ollama and required models
+        if self.ollama_client:
+            logger.info("Performing pre-flight Ollama health check...")
+            is_healthy = await self.ollama_client.health_check()
+            if not is_healthy:
+                raise RuntimeError(
+                    f"Ollama server is unreachable at '{self.ollama_client.base_url}'. "
+                    f"Please verify that the Ollama service is running and accessible."
+                )
+            
+            # Check availability for all configured models
+            for model_attr in ["OLLAMA_ORCHESTRATOR_MODEL", "OLLAMA_ANALYST_MODEL", "OLLAMA_SUMMARY_MODEL", "OLLAMA_EMBED_MODEL"]:
+                model_name = getattr(self.settings, model_attr, None)
+                if model_name:
+                    logger.info(f"Checking availability for model: {model_name}")
+                    try:
+                        await self.ollama_client.ensure_model_available(model_name)
+                    except Exception as e:
+                        logger.error(f"Required model '{model_name}' is not available: {e}")
+                        raise RuntimeError(f"Required model '{model_name}' is not available or could not be pulled: {e}") from e
 
         cache_key = f"report:{startup_name}"
         if self.memory:
@@ -145,14 +166,36 @@ class DiligenceOrchestrator:
     async def _execute_parallel_group(
         self, group: list[str], startup: StartupProfile
     ) -> dict[str, AgentResult]:
-        """Run a group of agents concurrently with timeout per agent."""
-        tasks = {name: self._execute_agent(name, startup) for name in group}
-        results = await asyncio.gather(*tasks.values(), return_exceptions=False)
-        return {name: result for name, result in zip(tasks.keys(), results)}
+        """Run a group of agents concurrently with timeout and semaphore-limited concurrency."""
+        logger = logging.getLogger("VentureMind.Orchestrator")
+        semaphore = asyncio.Semaphore(self.settings.PARALLEL_AGENT_LIMIT)
+
+        async def sem_execute(name):
+            async with semaphore:
+                return await self._execute_agent(name, startup)
+
+        tasks = {name: sem_execute(name) for name in group}
+        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+
+        processed_results = {}
+        for name, result in zip(tasks.keys(), results):
+            if isinstance(result, Exception):
+                logger.error(f"Agent '{name}' crashed with unhandled exception: {result}", exc_info=result)
+                processed_results[name] = AgentResult(
+                    agent_name=name,
+                    status=AgentStatus.FAILED,
+                    data=None,
+                    error=f"Unhandled crash: {str(result)}",
+                    duration_ms=0,
+                    sources=[]
+                )
+            else:
+                processed_results[name] = result
+        return processed_results
 
     async def _execute_agent(self, agent_name: str, startup: StartupProfile) -> AgentResult:
         """Run one agent with timeout enforcement and error isolation."""
-        logger = logging.getLogger("orchestrator")
+        logger = logging.getLogger("VentureMind.Orchestrator")
         logger.info(f"Starting execution of agent: {agent_name}")
         
         agent = self.agents.get(agent_name)
@@ -174,7 +217,8 @@ class DiligenceOrchestrator:
                 timeout=float(self.settings.AGENT_TIMEOUT_SECONDS)
             )
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            logger.info(f"Agent '{agent_name}' completed with status: {result.status}")
+            result.duration_ms = elapsed_ms
+            logger.info(f"Agent '{agent_name}' completed. Status: {result.status}. Timing: {elapsed_ms}ms")
             return result
         except asyncio.TimeoutError:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -189,7 +233,7 @@ class DiligenceOrchestrator:
             )
         except Exception as e:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            logger.error(f"Agent '{agent_name}' failed with error: {str(e)}")
+            logger.error(f"Agent '{agent_name}' failed with error: {str(e)}", exc_info=True)
             return AgentResult(
                 agent_name=agent_name,
                 status=AgentStatus.FAILED,
@@ -201,7 +245,7 @@ class DiligenceOrchestrator:
 
     async def _run_summarization(self, startup: StartupProfile, results: dict) -> AgentResult:
         """Run summarization agent with all prior results."""
-        logger = logging.getLogger("orchestrator")
+        logger = logging.getLogger("VentureMind.Orchestrator")
         logger.info("Starting execution of summarization agent.")
         
         agent = self.agents.get("summarization")
@@ -223,7 +267,8 @@ class DiligenceOrchestrator:
                 timeout=float(self.settings.AGENT_TIMEOUT_SECONDS)
             )
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            logger.info(f"Summarization agent completed with status: {result.status}")
+            result.duration_ms = elapsed_ms
+            logger.info(f"Summarization agent completed. Status: {result.status}. Timing: {elapsed_ms}ms")
             return result
         except asyncio.TimeoutError:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -238,7 +283,7 @@ class DiligenceOrchestrator:
             )
         except Exception as e:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            logger.error(f"Summarization agent failed with error: {str(e)}")
+            logger.error(f"Summarization agent failed with error: {str(e)}", exc_info=True)
             return AgentResult(
                 agent_name="summarization",
                 status=AgentStatus.FAILED,
@@ -295,7 +340,7 @@ class DiligenceOrchestrator:
 
         return DiligenceReport(
             startup_name=startup.name,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             market=market,
             competitors=competitors,
             financials=financials,
@@ -308,21 +353,9 @@ class DiligenceOrchestrator:
 
     def _build_profile_prompt(self, company_name: str, search_results: list[dict]) -> str:
         """Build the prompt for startup profile extraction."""
-        schema = {
-            "name": "string (Startup name)",
-            "website": "string (Official website URL)",
-            "founded_year": "integer",
-            "headquarters": "string (City, State/Country)",
-            "industry": "string (Industry vertical, e.g. Enterprise AI)",
-            "description": "string (One sentence description)",
-            "founders": ["string (Founder name 1)", "string (Founder name 2)"]
-        }
-        return (
-            f"You are a VC diligence assistant. Extract structural profile information for the company '{company_name}' "
-            f"from these web search results:\n\n"
-            f"{json.dumps(search_results, indent=2)}\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"If a field cannot be found, estimate or use 'unknown' for strings and 2020 for founded_year.\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ..utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "profile_extraction",
+            company_name=company_name,
+            search_results=json.dumps(search_results, indent=2)
         )

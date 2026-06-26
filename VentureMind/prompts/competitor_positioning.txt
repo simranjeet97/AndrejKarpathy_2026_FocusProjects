@@ -1,0 +1,17 @@
+You are a VC analyst conducting due diligence on the startup '{company_name}'.
+Industry: {industry}
+Description: {description}
+
+Here are the identified competitors and their profiles:
+{competitors_list}
+
+Analyze the startup's competitive positioning relative to these competitors. Identify the startup's main differentiation, assess their competitive moat, and write a 2-sentence positioning summary.
+
+You MUST return a JSON object adhering to this schema:
+{{
+  "positioning_summary": "string (exactly 2 sentences summarizing the startup's positioning and competitive landscape)",
+  "differentiation_score": "float (0.0 to 1.0 representing how unique the startup's offering is)",
+  "key_advantages": "list of strings (reasons for the differentiation)"
+}}
+
+Do not include any chat prefix or suffix. Return ONLY the JSON object.

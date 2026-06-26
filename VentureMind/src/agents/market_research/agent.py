@@ -172,25 +172,12 @@ class MarketResearchAgent:
 
     def _build_analysis_prompt(self, raw_data: dict, startup: StartupProfile) -> str:
         """Build the Ollama prompt for market analysis."""
-        schema = {
-            "tam_usd": "float (Total Addressable Market in USD, e.g. 5000000000.0)",
-            "sam_usd": "float (Serviceable Addressable Market in USD)",
-            "som_usd": "float (Serviceable Obtainable Market in USD)",
-            "cagr_pct": "float (CAGR percentage, e.g. 12.3)",
-            "key_trends": "list of strings (top market trends)",
-            "sources": "list of strings (URLs or references used)"
-        }
-        return (
-            f"You are an expert market analyst conducting due diligence on the startup '{startup.name}' "
-            f"in the '{startup.industry}' industry.\n\n"
-            f"Here is raw market research data gathered:\n"
-            f"{json.dumps(raw_data, indent=2)}\n\n"
-            f"Please analyze this raw data and extract structured market sizing metrics. "
-            f"When estimating TAM, SAM, SOM, convert raw string formats (e.g. '$1.2 billion') into raw float USD numbers. "
-            f"If the data is ambiguous, estimate conservatively.\n\n"
-            f"You MUST return a JSON object that adheres strictly to the following schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "market_analysis",
+            company_name=startup.name,
+            industry=startup.industry,
+            raw_data=json.dumps(raw_data, indent=2)
         )
 
     def _validate_output(self, market_data: MarketData) -> bool:

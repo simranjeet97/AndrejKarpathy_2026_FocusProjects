@@ -1,9 +1,23 @@
 import asyncio
 import re
 import urllib.parse
+import logging
 from urllib.parse import urlparse
 import httpx
 from .web_search import search_web, fetch_page_text, validate_url
+
+logger = logging.getLogger("VentureMind.CompetitorTools")
+
+# Share a single connection-pooled AsyncClient for competitor tools
+_client = None
+
+def get_competitor_client() -> httpx.AsyncClient:
+    """Retrieve or initialize the shared pooled async HTTP client for competitor tools."""
+    global _client
+    if _client is None or _client.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=5, max_connections=20)
+        _client = httpx.AsyncClient(timeout=10.0, limits=limits)
+    return _client
 
 async def find_competitors(startup_name: str, industry: str) -> list[dict]:
     """Search for direct and indirect competitor alternatives in the industry and deduplicate them."""
@@ -15,7 +29,8 @@ async def find_competitors(startup_name: str, industry: str) -> list[dict]:
             search_web(query1, max_results=5),
             search_web(query2, max_results=5)
         )
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to find competitors for {startup_name}: {e}")
         return []
 
     all_results = r1 + r2
@@ -68,29 +83,29 @@ async def get_company_info(company_name: str) -> dict:
         if search_results:
             info["website"] = search_results[0].get("url", "")
             info["description"] = search_results[0].get("snippet", "")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to get web presence info for {company_name}: {e}")
 
     # 2. Try OpenCorporates API
     try:
         url = f"https://api.opencorporates.com/v0.4/companies/search?q={urllib.parse.quote(company_name)}"
         validate_url(url)
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                companies = data.get("results", {}).get("companies", [])
-                if companies:
-                    best = companies[0].get("company", {})
-                    info["jurisdiction"] = best.get("jurisdiction_code", "")
-                    inc_date = best.get("incorporation_date", "")
-                    if inc_date and len(inc_date) >= 4:
-                        try:
-                            info["founded_year"] = int(inc_date[:4])
-                        except ValueError:
-                            pass
-    except Exception:
-        pass
+        client = get_competitor_client()
+        response = await client.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            companies = data.get("results", {}).get("companies", [])
+            if companies:
+                best = companies[0].get("company", {})
+                info["jurisdiction"] = best.get("jurisdiction_code", "")
+                inc_date = best.get("incorporation_date", "")
+                if inc_date and len(inc_date) >= 4:
+                    try:
+                        info["founded_year"] = int(inc_date[:4])
+                    except ValueError:
+                        pass
+    except Exception as e:
+        logger.warning(f"OpenCorporates API lookup failed for {company_name}: {e}")
 
     return info
 
@@ -142,7 +157,8 @@ async def get_funding_info(company_name: str) -> dict:
             "last_round": last_r,
             "sources": list(set(sources))
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Funding info search failed for {company_name}: {e}")
         return default_res
 
 async def get_company_linkedin_signals(company_name: str) -> dict:
@@ -167,7 +183,7 @@ async def get_company_linkedin_signals(company_name: str) -> dict:
                     "employee_estimate": match.group(1).strip(),
                     "source": r.get("url", "")
                 }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"LinkedIn signals fetch failed for {company_name}: {e}")
 
     return default_res

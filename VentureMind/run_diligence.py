@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+import argparse
 from src.api.dependencies import get_orchestrator, get_renderer, get_report_database
 from src.report.renderer import ReportRenderer
 
@@ -13,7 +14,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-logger = logging.getLogger("run_diligence")
+logger = logging.getLogger("VentureMind.CLI")
 
 async def run_pipeline(startup_name: str):
     logger.info("=" * 60)
@@ -61,13 +62,20 @@ async def run_pipeline(startup_name: str):
         except Exception as docx_err:
             logger.warning(f"Failed to generate Word/DOCX report: {docx_err}")
 
+        # Try rendering HTML
+        try:
+            html_filename = renderer.render_html(report)
+            logger.info(f"Saved HTML report to: {html_filename}")
+        except Exception as html_err:
+            logger.warning(f"Failed to generate HTML report: {html_err}")
+
         # Run 2: Hot start (testing shared memory cache)
-        logger.info("\n--- Run 2: Hot Start (testing Dragonfly/SQLite shared memory cache) ---")
+        logger.info("\n--- Run 2: Hot Start (testing shared memory cache) ---")
         t1 = time.monotonic()
         cached_report = await orchestrator.run(startup_name)
         elapsed_cached = time.monotonic() - t1
         logger.info(f"Run 2 completed in {elapsed_cached:.4f} seconds.")
-        logger.info(f"Cache speedup: {elapsed_cold / elapsed_cached:.1f}x faster!")
+        logger.info(f"Cache speedup: {elapsed_cold / max(elapsed_cached, 0.001):.1f}x faster!")
 
         # Print a short preview of the generated report
         logger.info("\n" + "=" * 60)
@@ -80,5 +88,15 @@ async def run_pipeline(startup_name: str):
         await db.disconnect()
 
 if __name__ == "__main__":
-    startup = sys.argv[1] if len(sys.argv) > 1 else "Linear"
-    asyncio.run(run_pipeline(startup))
+    parser = argparse.ArgumentParser(description="VentureMind Multi-Agent Startup Diligence Pipeline")
+    parser.add_argument("startup", nargs="?", default="Linear", help="Name of the startup to analyze (default: Linear)")
+    args = parser.parse_args()
+
+    try:
+        asyncio.run(run_pipeline(args.startup))
+    except KeyboardInterrupt:
+        logger.info("\nPipeline execution cancelled by user (Ctrl+C). Exiting.")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Pipeline execution failed: {e}", exc_info=True)
+        sys.exit(1)

@@ -1,8 +1,11 @@
 import os
 import json
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime, timedelta, timezone
 import aiosqlite
 from ..models.domain import AgentResult, StartupProfile, DiligenceReport, AgentStatus
+
+logger = logging.getLogger("VentureMind.SharedMemory")
 
 class SharedMemory:
     """SQLite-based shared memory provider (using aiosqlite) to persist inter-agent state and workflow execution progress without requiring server dependencies."""
@@ -19,55 +22,63 @@ class SharedMemory:
         if self._initialized:
             return
         os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute('''
-                CREATE TABLE IF NOT EXISTS kv_store (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    expires_at TEXT
-                )
-            ''')
-            await db.commit()
-        self._initialized = True
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("PRAGMA journal_mode=WAL;")
+                await db.execute("PRAGMA busy_timeout = 5000;")
+                await db.execute('''
+                    CREATE TABLE IF NOT EXISTS kv_store (
+                        key TEXT PRIMARY KEY,
+                        value TEXT,
+                        expires_at TEXT
+                    )
+                ''')
+                await db.commit()
+            self._initialized = True
+        except Exception as e:
+            logger.error(f"Failed to initialize shared memory database: {e}", exc_info=True)
+            raise
 
     async def _cleanup_expired(self, db) -> None:
         """Helper to clear out expired entries from the KV database table."""
         await db.execute(
             "DELETE FROM kv_store WHERE expires_at IS NOT NULL AND expires_at < ?",
-            (datetime.utcnow().isoformat(),)
+            (datetime.now(timezone.utc).isoformat(),)
         )
 
     async def _set(self, key: str, value: str, ttl_seconds: int = None) -> None:
         """Set a value in the key-value store with an optional TTL expiration in seconds."""
         expires_at = None
         if ttl_seconds:
-            expires_at = (datetime.utcnow() + timedelta(seconds=ttl_seconds)).isoformat()
+            expires_at = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
         try:
             await self._ensure_db()
             async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("PRAGMA busy_timeout = 5000;")
                 await self._cleanup_expired(db)
                 await db.execute(
                     "INSERT OR REPLACE INTO kv_store (key, value, expires_at) VALUES (?, ?, ?)",
                     (key, value, expires_at)
                 )
                 await db.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to set key '{key}' in shared memory: {e}", exc_info=True)
 
     async def _get(self, key: str) -> str | None:
         """Retrieve a value by key, resolving expiration details."""
         try:
             await self._ensure_db()
             async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("PRAGMA busy_timeout = 5000;")
                 await self._cleanup_expired(db)
                 async with db.execute(
                     "SELECT value FROM kv_store WHERE key = ? AND (expires_at IS NULL OR expires_at > ?)",
-                    (key, datetime.utcnow().isoformat())
+                    (key, datetime.now(timezone.utc).isoformat())
                 ) as cursor:
                     row = await cursor.fetchone()
                     return row[0] if row else None
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to get key '{key}' from shared memory: {e}", exc_info=True)
         return None
 
     async def get(self, key: str) -> str | None:
@@ -92,8 +103,8 @@ class SharedMemory:
         if data:
             try:
                 return AgentResult.model_validate_json(data) if hasattr(AgentResult, "model_validate_json") else AgentResult.parse_raw(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to validate agent result JSON for key '{key}': {e}", exc_info=True)
         return None
 
     async def store_startup_profile(self, startup_name: str, profile: StartupProfile) -> None:
@@ -109,8 +120,8 @@ class SharedMemory:
         if data:
             try:
                 return StartupProfile.model_validate_json(data) if hasattr(StartupProfile, "model_validate_json") else StartupProfile.parse_raw(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to validate startup profile JSON for key '{key}': {e}", exc_info=True)
         return None
 
     async def store_report(self, startup_name: str, report: DiligenceReport) -> None:
@@ -126,8 +137,8 @@ class SharedMemory:
         if data:
             try:
                 return DiligenceReport.model_validate_json(data) if hasattr(DiligenceReport, "model_validate_json") else DiligenceReport.parse_raw(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to validate diligence report JSON for key '{key}': {e}", exc_info=True)
         return None
 
     async def mark_agent_running(self, startup_name: str, agent_name: str) -> None:
@@ -167,6 +178,7 @@ class SharedMemory:
         try:
             await self._ensure_db()
             async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("PRAGMA busy_timeout = 5000;")
                 async with db.execute("SELECT 1") as cursor:
                     row = await cursor.fetchone()
                     return row is not None and row[0] == 1

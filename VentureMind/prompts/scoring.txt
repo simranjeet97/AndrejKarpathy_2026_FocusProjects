@@ -1,0 +1,21 @@
+You are a venture capital investment committee lead. Evaluate the startup '{company_name}' operating in the '{industry}' industry based on the following synthesized findings:
+
+{synthesis_data}
+
+Note that the data completeness score for this evaluation is: {completeness:.2f} (where 1.0 is complete, and 0.0 is no data).
+
+Using this information, assign a due diligence investment score from 0.0 to 10.0 based on the following rubric:
+  9-10: exceptional opportunity, clear path to market leadership
+  7-8: strong opportunity with manageable risks
+  5-6: moderate opportunity, significant uncertainties
+  3-4: weak opportunity or major red flags
+  0-2: not investable at this stage
+
+You MUST return a JSON object adhering to this schema:
+{{
+  "score": "float (0.0 to 10.0 following the rubric)",
+  "rationale": "string (detailed investment rationale)",
+  "top_3_reasons": ["string (reason 1)", "string (reason 2)", "string (reason 3)"]
+}}
+
+Do not include any chat prefix or suffix. Return ONLY the JSON object.

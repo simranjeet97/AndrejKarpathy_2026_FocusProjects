@@ -228,6 +228,15 @@ def mock_all_tools(mocker):
     
     client = dependencies.get_ollama_client()
     mocker.patch.object(client, "generate", side_effect=mock_generate)
+    
+    async def mock_health_check(*args, **kwargs):
+        return True
+        
+    async def mock_ensure_model_available(*args, **kwargs):
+        return None
+        
+    mocker.patch.object(client, "health_check", side_effect=mock_health_check)
+    mocker.patch.object(client, "ensure_model_available", side_effect=mock_ensure_model_available)
 
 
 class TestFullAnalysis:

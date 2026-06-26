@@ -172,26 +172,12 @@ class LegalAgent:
 
     def _build_classification_prompt(self, raw_data: dict, startup: StartupProfile) -> str:
         """Build the Ollama prompt for legal flag classification."""
-        schema = {
-            "flags": [
-                {
-                    "flag_type": "string (LAWSUIT | REGULATORY | IP_DISPUTE | COMPLIANCE | NONE)",
-                    "severity": "string (HIGH | MEDIUM | LOW | NONE)",
-                    "description": "string (one sentence)",
-                    "source": "string"
-                }
-            ]
-        }
-        return (
-            f"You are a legal diligence expert assessing the startup '{startup.name}' "
-            f"in the '{startup.industry}' industry.\n\n"
-            f"Here is raw legal research data gathered:\n"
-            f"{json.dumps(raw_data, indent=2)}\n\n"
-            f"Please analyze these findings and classify any active issues, lawsuits, or regulatory/compliance concerns into legal flags.\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"If there are no issues, return an empty list for 'flags'.\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "legal_classification",
+            company_name=startup.name,
+            industry=startup.industry,
+            raw_data=json.dumps(raw_data, indent=2)
         )
 
     def _calculate_legal_risk_score(self, flags: list[LegalFlag]) -> float:

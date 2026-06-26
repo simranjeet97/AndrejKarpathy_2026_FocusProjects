@@ -1,6 +1,8 @@
 # VentureMind
 
-VentureMind is a serverless multi-agent due diligence pipeline that automates venture capital startup analysis by scraping, parsing, and synthesizing qualitative and quantitative signals. The system coordinates domain-specialist agents to assess market opportunity, competitive positioning, financial health, and legal compliance. It persists analyzed results in a local SQLite database and compiles structured diligence reports in Markdown and Microsoft Word (docx) formats.
+VentureMind is a **serverless multi-agent due diligence pipeline** that automates venture capital startup analysis by scraping, parsing, and synthesizing qualitative and quantitative signals. The system coordinates domain-specialist agents to assess market opportunity, competitive positioning, financial health, and legal compliance — all powered by **locally running Ollama models** (zero API costs).
+
+It persists analyzed results in a local SQLite database and compiles structured diligence reports in **Markdown**, **HTML**, and **Microsoft Word (DOCX)** formats.
 
 ---
 
@@ -32,7 +34,7 @@ The orchestration workflow manages parallel data collection followed by a sequen
                                   │
                                   ▼
                        ┌────────────────────────┐
-                       │     ReportRenderer     │ ──▶ [Markdown / Docx Reports]
+                       │     ReportRenderer     │ ──▶ [Markdown / HTML / DOCX]
                        └────────────────────────┘
 ```
 
@@ -62,35 +64,74 @@ The orchestration workflow manages parallel data collection followed by a sequen
 
 ### Prerequisites
 *   Python 3.10+
-*   Ollama running locally on `localhost:11434`
+*   [Ollama](https://ollama.com/download) running locally on `localhost:11434`
 
 ### Quick Start
-1.  **Install dependencies** (run in python environment):
+
+**Option A — Automated Setup:**
+```bash
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+**Option B — Manual Setup:**
+1.  **Install dependencies** (run in a virtual environment):
     ```bash
+    python -m venv .venv && source .venv/bin/activate
     pip install -e ".[dev]"
     ```
 2.  **Pull required local models** from Ollama:
     ```bash
-    ollama pull mistral:7b
-    ollama pull codellama:13b
+    ollama pull qwen2.5:7b
     ollama pull nomic-embed-text
     ```
-3.  **Configure Environment Variables** in a `.env` file in the root workspace folder:
-    ```env
-    DATABASE_URL=sqlite:///data/reports.db
-    DRAGONFLY_URL=sqlite:///data/shared_memory.db
-    ```
-4.  **Run test suite** to verify setup:
+3.  **Configure environment** — copy the example and adjust as needed:
     ```bash
-    pytest
+    cp .env.example .env
+    ```
+4.  **Run health check** to verify everything is configured:
+    ```bash
+    python scripts/health_check.py
+    ```
+5.  **Run the pipeline**:
+    ```bash
+    python run_diligence.py "Stripe"
     ```
 
 ---
 
-## 5. Programmatic Execution Example
+## 5. Usage Examples
 
-You can run the diligence pipeline programmatically using python:
+### CLI Pipeline
+```bash
+# Analyse a startup (generates Markdown, HTML, and DOCX reports)
+python run_diligence.py "Linear"
 
+# Specify a different startup
+python run_diligence.py "Notion"
+```
+
+### REST API Server
+```bash
+# Start the API server
+uvicorn src.api.app:app --reload --port 8000
+
+# Trigger an analysis via HTTP
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"startup_name": "Stripe"}'
+
+# List all reports
+curl http://localhost:8000/api/v1/reports
+
+# Get a specific report
+curl http://localhost:8000/api/v1/reports/Stripe
+
+# Health check
+curl http://localhost:8000/api/v1/health
+```
+
+### Programmatic Python
 ```python
 import asyncio
 from src.api.dependencies import get_orchestrator
@@ -100,37 +141,32 @@ async def main():
     report = await orchestrator.run("Stripe")
     print(f"Startup: {report.startup_name}")
     print(f"Investment Score: {report.investment_score}/10")
-    print(f"Summary Summary: {report.summary[:150]}...")
+    print(f"Summary: {report.summary[:200]}...")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Truncated Output Example
-```markdown
-# VentureMind Due Diligence Report: Stripe
+---
 
-**Generated On:** June 11, 2026
-**Investment Recommendation:** ⭐ 9.2/10 — EXCEPTIONAL OPPORTUNITY
+## 6. API Endpoints
 
-## Table of Contents
-1. [Executive Summary](#executive-summary)
-2. [Risk Assessment](#risk-assessment)
-...
-
-### Executive Summary
-Stripe is a market-leading payment processing infrastructure company showing high market opportunity and strong financial metrics. Operating in a massive addressable market with over $10T global payments volume, the company has built a reliable moat...
-```
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/analyze` | Run full multi-agent due diligence pipeline |
+| `GET` | `/api/v1/reports` | List recently generated reports |
+| `GET` | `/api/v1/reports/{startup_name}` | Get the latest report for a startup |
+| `GET` | `/api/v1/health` | System health check (Ollama, DB, memory) |
 
 ---
 
-## 6. Adding a New Agent
+## 7. Adding a New Agent
 
 Follow these five steps to extend VentureMind with a new domain specialist agent:
 
 1.  **Define Domain Models**: Add the new agent's structured output data model in `src/models/domain.py` (inheriting from `pydantic.BaseModel`).
 2.  **Implement Scraper Tools**: Create the necessary data gathering/search tool functions under `src/tools/` (e.g., in a new or existing module).
-3.  **Implement Agent Class**: Write the agent class in `src/agents/your_domain/agent.py`. Inherit or follow the constructor pattern `(ollama_client, tools, settings)` and implement the async `run(self, startup: StartupProfile) -> AgentResult` method.
+3.  **Implement Agent Class**: Write the agent class in `src/agents/your_domain/agent.py`. Follow the constructor pattern `(ollama_client, tools, settings)` and implement the async `run(self, startup: StartupProfile) -> AgentResult` method.
 4.  **Register in Orchestrator**:
     *   Import the new agent class in `src/orchestrator/orchestrator.py`.
     *   Add the agent's key identifier to the parallel execution plan group in `_plan_execution()` and compile its results inside `_assemble_report()`.
@@ -138,20 +174,82 @@ Follow these five steps to extend VentureMind with a new domain specialist agent
 
 ---
 
-## 7. Environment Variables Configuration
+## 8. Environment Variables Configuration
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | Connection path for the SQLite report database. | *Required* |
-| `DRAGONFLY_URL` | Connection path for the SQLite shared memory database. | *Required* |
+| `DATABASE_URL` | SQLite connection path for the report database. | *Required* |
+| `DRAGONFLY_URL` | SQLite connection path for shared memory. | *Required* |
 | `OLLAMA_BASE_URL` | Base URL of the Ollama server. | `http://localhost:11434` |
-| `OLLAMA_ORCHESTRATOR_MODEL` | Ollama model name used by orchestrator for profile extraction. | `mistral:7b` |
-| `OLLAMA_ANALYST_MODEL` | Ollama model name used by domain specialist agents. | `codellama:13b` |
-| `OLLAMA_SUMMARY_MODEL` | Ollama model name used by the summarization agent. | `mistral:7b` |
-| `OLLAMA_EMBED_MODEL` | Ollama model name used for embedding generation. | `nomic-embed-text` |
-| `REPORTS_OUTPUT_DIR` | Output directory for generated PDF and Markdown files. | `data/reports` |
-| `MAX_SEARCH_RESULTS` | Max search results retrieved per DuckDuckGo query. | `10` |
-| `MAX_PDF_PAGES` | Max pages parsed from a source PDF document. | `50` |
-| `AGENT_TIMEOUT_SECONDS` | Execution timeout limit per agent run in seconds. | `120` |
-| `PARALLEL_AGENT_LIMIT` | Max concurrent specialist agent executions. | `4` |
-| `LOG_LEVEL` | Logger level for system output. | `INFO` |
+| `OLLAMA_ORCHESTRATOR_MODEL` | Model for orchestrator profile extraction. | `qwen2.5:7b` |
+| `OLLAMA_ANALYST_MODEL` | Model for domain specialist agents. | `qwen2.5:7b` |
+| `OLLAMA_SUMMARY_MODEL` | Model for the summarization agent. | `qwen2.5:7b` |
+| `OLLAMA_EMBED_MODEL` | Model for embedding generation. | `nomic-embed-text` |
+| `REPORTS_OUTPUT_DIR` | Output directory for generated reports. | `data/reports` |
+| `MAX_SEARCH_RESULTS` | Max search results retrieved per query. | `10` |
+| `MAX_PDF_PAGES` | Max pages parsed from a source PDF. | `50` |
+| `AGENT_TIMEOUT_SECONDS` | Timeout per agent run (seconds). | `180` |
+| `PARALLEL_AGENT_LIMIT` | Max concurrent agent executions. | `4` |
+| `LOG_LEVEL` | Logging level. | `INFO` |
+
+---
+
+## 9. Project Structure
+
+```
+VentureMind/
+├── run_diligence.py            # CLI entry point
+├── pyproject.toml              # Dependencies & project metadata
+├── .env.example                # Environment variable template
+├── prompts/                    # LLM prompt templates
+│   ├── market_analysis.txt
+│   ├── financial_analysis.txt
+│   ├── competitor_positioning.txt
+│   └── profile_extraction.txt
+├── scripts/
+│   ├── setup.sh                # Automated setup script
+│   └── health_check.py         # Pre-flight system health check
+├── src/
+│   ├── agents/                 # Domain specialist agents
+│   │   ├── market_research/
+│   │   ├── competitor/
+│   │   ├── financial/
+│   │   ├── legal/
+│   │   └── summarization/
+│   ├── api/
+│   │   ├── app.py              # FastAPI application
+│   │   └── dependencies.py     # DI factories
+│   ├── config/
+│   │   └── settings.py         # Pydantic Settings
+│   ├── llm/
+│   │   ├── ollama_client.py    # Pooled async Ollama client
+│   │   └── adk_bridge.py       # Google ADK model bridge
+│   ├── memory/
+│   │   ├── shared_memory.py    # Inter-agent KV store (SQLite)
+│   │   └── database.py         # Report persistence (SQLite)
+│   ├── models/
+│   │   ├── domain.py           # Pydantic domain models
+│   │   └── orchestration.py    # Workflow & task models
+│   ├── orchestrator/
+│   │   └── orchestrator.py     # Pipeline orchestrator
+│   ├── report/
+│   │   └── renderer.py         # Markdown/HTML/DOCX renderer
+│   ├── tools/                  # External data scrapers
+│   │   ├── document/
+│   │   ├── financial/
+│   │   ├── legal/
+│   │   └── search/
+│   └── utils/
+│       └── prompt_loader.py    # Template loading utility
+├── tests/
+│   ├── unit/
+│   └── integration/
+└── data/
+    └── reports/                # Generated report outputs
+```
+
+---
+
+## 10. License
+
+MIT

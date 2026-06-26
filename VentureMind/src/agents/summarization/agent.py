@@ -1,7 +1,16 @@
 import json
 import time
-from datetime import datetime
-from ...models.domain import StartupProfile, AgentResult, DiligenceReport, AgentStatus
+from datetime import datetime, timezone
+from ...models.domain import (
+    StartupProfile,
+    AgentResult,
+    DiligenceReport,
+    AgentStatus,
+    MarketData,
+    CompetitorLandscape,
+    FinancialProfile,
+    LegalProfile
+)
 from ...llm.ollama_client import OllamaClient
 from ...config.settings import Settings
 
@@ -14,7 +23,7 @@ class SummarizationAgent:
         self.settings = settings
 
     async def run(self, startup: StartupProfile, agent_results: dict[str, AgentResult]) -> AgentResult:
-        """Synthesize all agent outputs into final DiligenceReport with investment score."""
+        """Synthesize all agent outputs into final DiligenceReport summary details."""
         start_time = time.monotonic()
         try:
             # Check successful agents count
@@ -32,42 +41,7 @@ class SummarizationAgent:
             # 4. Consolidate and extract risk flags
             risk_flags = self._extract_risk_flags(agent_results)
 
-            # Parse domain models from success results
-            from ...models.domain import MarketData, CompetitorLandscape, FinancialProfile, LegalProfile
-
-            market = None
-            market_res = agent_results.get("market_research")
-            if market_res and market_res.status in ("SUCCESS", AgentStatus.SUCCESS) and market_res.data:
-                try:
-                    market = MarketData(**market_res.data)
-                except Exception:
-                    pass
-
-            competitors = None
-            competitor_res = agent_results.get("competitor")
-            if competitor_res and competitor_res.status in ("SUCCESS", AgentStatus.SUCCESS) and competitor_res.data:
-                try:
-                    competitors = CompetitorLandscape(**competitor_res.data)
-                except Exception:
-                    pass
-
-            financials = None
-            financial_res = agent_results.get("financial")
-            if financial_res and financial_res.status in ("SUCCESS", AgentStatus.SUCCESS) and financial_res.data:
-                try:
-                    financials = FinancialProfile(**financial_res.data)
-                except Exception:
-                    pass
-
-            legal = None
-            legal_res = agent_results.get("legal")
-            if legal_res and legal_res.status in ("SUCCESS", AgentStatus.SUCCESS) and legal_res.data:
-                try:
-                    legal = LegalProfile(**legal_res.data)
-                except Exception:
-                    pass
-
-            summary_str = synthesis.get("summary") or "Diligence summary compiled."
+            summary_str = synthesis.get("summary") or "Due diligence summary is unavailable."
 
             # Collect unique sources
             results_list = list(agent_results.values())
@@ -77,19 +51,12 @@ class SummarizationAgent:
                     sources.extend(r.sources)
             unique_sources = sorted(list(set(sources)))
 
-            # Build final DiligenceReport model
-            report = DiligenceReport(
-                startup_name=startup.name,
-                generated_at=datetime.utcnow(),
-                market=market,
-                competitors=competitors,
-                financials=financials,
-                legal=legal,
-                summary=summary_str,
-                investment_score=score,
-                risk_flags=risk_flags,
-                agent_results=results_list,
-            )
+            # Synthesized summary fields dictionary
+            data = {
+                "summary": summary_str,
+                "investment_score": score,
+                "risk_flags": risk_flags
+            }
 
             # Determine summarization agent status
             status = AgentStatus.SUCCESS if success_count > 0 else AgentStatus.FAILED
@@ -99,7 +66,7 @@ class SummarizationAgent:
             return AgentResult(
                 agent_name="summarization",
                 status=status,
-                data=report.model_dump() if hasattr(report, "model_dump") else report.dict(),
+                data=data,
                 error=error_msg,
                 duration_ms=duration_ms,
                 sources=unique_sources,
@@ -212,44 +179,24 @@ class SummarizationAgent:
 
         sections_str = "\n\n".join(sections)
 
-        schema = {
-            "summary": "string (3-paragraph executive summary covering market opportunity, competitive position, financial health, and legal standing)",
-            "key_strengths": ["string (key strength 1)", "string (key strength 2)"],
-            "key_risks": ["string (key risk 1)", "string (key risk 2)"]
-        }
-
-        return (
-            f"You are a venture capital analyst. Synthesize this due diligence data for the startup '{startup.name}' "
-            f"operating in the '{startup.industry}' industry. Description: {startup.description}\n\n"
-            f"Here are the findings from the specialist diligence agents:\n\n"
-            f"{sections_str}\n\n"
-            f"Please write a 3-paragraph executive summary covering: market opportunity, competitive position, financial health, and legal standing.\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "synthesis",
+            company_name=startup.name,
+            industry=startup.industry,
+            description=startup.description,
+            sections_str=sections_str
         )
 
     def _build_scoring_prompt(self, startup: StartupProfile, synthesis: dict, completeness: float) -> str:
         """Build the prompt for scoring calculation."""
-        schema = {
-            "score": "float (0.0 to 10.0 following the rubric)",
-            "rationale": "string (detailed investment rationale)",
-            "top_3_reasons": ["string (reason 1)", "string (reason 2)", "string (reason 3)"]
-        }
-        return (
-            f"You are a venture capital investment committee lead. Evaluate the startup '{startup.name}' "
-            f"operating in the '{startup.industry}' industry based on the following synthesized findings:\n\n"
-            f"{json.dumps(synthesis, indent=2)}\n\n"
-            f"Note that the data completeness score for this evaluation is: {completeness:.2f} (where 1.0 is complete, and 0.0 is no data).\n\n"
-            f"Using this information, assign a due diligence investment score from 0.0 to 10.0 based on the following rubric:\n"
-            f"  9-10: exceptional opportunity, clear path to market leadership\n"
-            f"  7-8: strong opportunity with manageable risks\n"
-            f"  5-6: moderate opportunity, significant uncertainties\n"
-            f"  3-4: weak opportunity or major red flags\n"
-            f"  0-2: not investable at this stage\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "scoring",
+            company_name=startup.name,
+            industry=startup.industry,
+            synthesis_data=json.dumps(synthesis, indent=2),
+            completeness=completeness
         )
 
     def _assess_data_completeness(self, results: dict) -> float:

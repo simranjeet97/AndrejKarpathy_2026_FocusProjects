@@ -1,44 +1,58 @@
 [project]
 name = "venturemind"
-version = "0.1.0"
-description = "VentureMind — Startup Due Diligence Multi-Agent System"
+version = "1.0.0"
+description = "VentureMind — Multi-Agent Startup Due Diligence Pipeline powered by Ollama"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+readme = "README.md"
+
 dependencies = [
-    "google-adk",
-    "ollama",
-    "asyncpg",
-    "sqlalchemy[asyncio]",
-    "redis",
-    "httpx",
-    "aiohttp",
-    "pydantic",
-    "pydantic-settings",
-    "fastapi",
-    "uvicorn[standard]",
-    "pypdf2",
-    "pymupdf",
-    "pdfplumber",
-    "pandas",
-    "numpy",
-    "matplotlib",
-    "plotly",
-    "kaleido",
-    "beautifulsoup4",
-    "lxml",
-    "python-docx",
-    "jinja2",
-    "tiktoken",
-    "python-dotenv",
-    "aiosqlite",
+    # --- LLM & Agent Framework ---
+    "httpx>=0.27",                # Async HTTP client for Ollama API & web scraping
+    
+    # --- Data Validation & Settings ---
+    "pydantic>=2.0",              # Domain models and schema validation
+    "pydantic-settings>=2.0",     # Env-based configuration loading
+
+    # --- Web Framework ---
+    "fastapi>=0.115",             # REST API server
+    "uvicorn[standard]>=0.30",    # ASGI server
+
+    # --- Database ---
+    "aiosqlite>=0.20",            # Async SQLite for report DB & shared memory
+
+    # --- PDF & Document Parsing ---
+    "pypdf>=4.0",                 # PDF text extraction (replaces deprecated pypdf2)
+    
+    # --- Web Scraping ---
+    "beautifulsoup4>=4.12",       # HTML parsing for web scraping fallback
+    "lxml>=5.0",                  # Fast XML/HTML parser backend
+
+    # --- Report Rendering ---
+    "python-docx>=1.1",           # DOCX report generation
+    "jinja2>=3.1",                # HTML report template rendering
+
+    # --- Environment ---
+    "python-dotenv>=1.0",         # .env file loading
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-mock",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
 ]
+
+[project.scripts]
+venturemind = "run_diligence:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

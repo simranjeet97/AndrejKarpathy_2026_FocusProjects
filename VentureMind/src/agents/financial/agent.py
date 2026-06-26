@@ -203,29 +203,12 @@ class FinancialAgent:
 
     def _build_financial_prompt(self, raw_data: dict, startup: StartupProfile) -> str:
         """Build the Ollama prompt for financial health analysis."""
-        schema = {
-            "signals": [
-                {
-                    "metric_name": "string (e.g. ARR, Total Funding, Valuation)",
-                    "value": "string (value with units)",
-                    "period": "string (e.g. 2024, Q3 2024, FY2025)",
-                    "source": "string",
-                    "confidence": "float (0.0 to 1.0)",
-                }
-            ],
-            "burn_rate_estimate": "string (e.g. high, moderate, low, or specific dollar amount)",
-            "runway_estimate": "string (e.g. 18 months, unknown)"
-        }
-        return (
-            f"You are a financial diligence expert assessing the startup '{startup.name}' "
-            f"in the '{startup.industry}' industry.\n\n"
-            f"Here is the raw financial signal data gathered:\n"
-            f"{json.dumps(raw_data, indent=2)}\n\n"
-            f"Please analyze these signals, identify any financial metrics (such as revenue/ARR, funding totals, valuation), "
-            f"and evaluate the financial risk/health.\n\n"
-            f"You MUST return a JSON object adhering to this schema:\n"
-            f"{json.dumps(schema, indent=2)}\n\n"
-            f"Do not include any chat prefix or suffix. Return ONLY the JSON object."
+        from ...utils.prompt_loader import get_prompt_loader
+        return get_prompt_loader().render(
+            "financial_analysis",
+            company_name=startup.name,
+            industry=startup.industry,
+            raw_data=json.dumps(raw_data, indent=2)
         )
 
     def _estimate_burn_runway(self, signals: dict) -> tuple[str, str]:

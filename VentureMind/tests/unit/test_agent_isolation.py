@@ -142,9 +142,14 @@ async def test_agents_communicate_only_through_result_types(mocker):
 @pytest.mark.asyncio
 async def test_orchestrator_handles_agent_timeout(mocker):
     """Verify that if a specialist agent exceeds the configuration timeout limit, the orchestrator logs a TIMEOUT and continues."""
-    mock_settings = mocker.MagicMock()
-    mock_settings.AGENT_TIMEOUT_SECONDS = 1
-    mock_settings.OLLAMA_ORCHESTRATOR_MODEL = "test"
+    from src.config.settings import Settings
+    mock_settings = Settings(
+        DATABASE_URL="sqlite://",
+        DRAGONFLY_URL="sqlite://",
+        AGENT_TIMEOUT_SECONDS=1,
+        OLLAMA_ORCHESTRATOR_MODEL="test",
+        PARALLEL_AGENT_LIMIT=4
+    )
 
     startup = StartupProfile(
         name="TestStartup", website="test.com", founded_year=2020,
@@ -194,6 +199,10 @@ async def test_orchestrator_handles_agent_timeout(mocker):
     }
 
     orchestrator = DiligenceOrchestrator(agents, None, mock_settings)
+    mock_client = mocker.AsyncMock()
+    mock_client.health_check.return_value = True
+    mock_client.ensure_model_available.return_value = None
+    orchestrator.ollama_client = mock_client
     mocker.patch.object(orchestrator, "_build_startup_profile", return_value=startup)
 
     report = await orchestrator.run("TestStartup")
@@ -212,9 +221,14 @@ async def test_orchestrator_handles_agent_timeout(mocker):
 @pytest.mark.asyncio
 async def test_orchestrator_handles_agent_exception(mocker):
     """Verify that when a specialist agent raises a runtime exception, the orchestrator reports FAILED for that agent but completes the report."""
-    mock_settings = mocker.MagicMock()
-    mock_settings.AGENT_TIMEOUT_SECONDS = 10
-    mock_settings.OLLAMA_ORCHESTRATOR_MODEL = "test"
+    from src.config.settings import Settings
+    mock_settings = Settings(
+        DATABASE_URL="sqlite://",
+        DRAGONFLY_URL="sqlite://",
+        AGENT_TIMEOUT_SECONDS=10,
+        OLLAMA_ORCHESTRATOR_MODEL="test",
+        PARALLEL_AGENT_LIMIT=4
+    )
 
     startup = StartupProfile(
         name="TestStartup", website="test.com", founded_year=2020,
@@ -263,6 +277,10 @@ async def test_orchestrator_handles_agent_exception(mocker):
     }
 
     orchestrator = DiligenceOrchestrator(agents, None, mock_settings)
+    mock_client = mocker.AsyncMock()
+    mock_client.health_check.return_value = True
+    mock_client.ensure_model_available.return_value = None
+    orchestrator.ollama_client = mock_client
     mocker.patch.object(orchestrator, "_build_startup_profile", return_value=startup)
 
     report = await orchestrator.run("TestStartup")
@@ -280,9 +298,14 @@ async def test_orchestrator_handles_agent_exception(mocker):
 @pytest.mark.asyncio
 async def test_parallel_execution_is_actually_parallel(mocker):
     """Verify that parallel specialist agents run concurrently, completing in less than the sum of their individual sleep durations."""
-    mock_settings = mocker.MagicMock()
-    mock_settings.AGENT_TIMEOUT_SECONDS = 10
-    mock_settings.OLLAMA_ORCHESTRATOR_MODEL = "test"
+    from src.config.settings import Settings
+    mock_settings = Settings(
+        DATABASE_URL="sqlite://",
+        DRAGONFLY_URL="sqlite://",
+        AGENT_TIMEOUT_SECONDS=10,
+        OLLAMA_ORCHESTRATOR_MODEL="test",
+        PARALLEL_AGENT_LIMIT=4
+    )
 
     startup = StartupProfile(
         name="TestStartup", website="test.com", founded_year=2020,

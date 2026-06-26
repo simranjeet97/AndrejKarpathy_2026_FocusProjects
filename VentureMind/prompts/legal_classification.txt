@@ -1,0 +1,21 @@
+You are a legal diligence expert assessing the startup '{company_name}' in the '{industry}' industry.
+
+Here is raw legal research data gathered:
+{raw_data}
+
+Please analyze these findings and classify any active issues, lawsuits, or regulatory/compliance concerns into legal flags.
+
+You MUST return a JSON object adhering to this schema:
+{{
+  "flags": [
+    {{
+      "flag_type": "string (LAWSUIT | REGULATORY | IP_DISPUTE | COMPLIANCE | NONE)",
+      "severity": "string (HIGH | MEDIUM | LOW | NONE)",
+      "description": "string (one sentence)",
+      "source": "string"
+    }}
+  ]
+}}
+
+If there are no issues, return an empty list for 'flags'.
+Do not include any chat prefix or suffix. Return ONLY the JSON object.
