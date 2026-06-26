@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+aiohttp
+google-agent-sdk
+watchdog
+jinja2
+pytest
+pytest-asyncio
+python-dotenv

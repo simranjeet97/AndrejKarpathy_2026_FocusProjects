@@ -1,0 +1,37 @@
+[
+  {
+    "id": "qa-001",
+    "name": "Factual QA",
+    "input_prompt": "What is the speed of light in a vacuum?",
+    "expected_output": "The speed of light in a vacuum is approximately 299,792,458 meters per second (or about 186,282 miles per second).",
+    "tags": ["factual", "physics", "qa"]
+  },
+  {
+    "id": "sum-001",
+    "name": "Text Summarization",
+    "input_prompt": "Summarize the following text in one sentence:\nArtificial intelligence is rapidly transforming industries by automating tasks, analyzing massive datasets, and enabling machine learning. While it brings significant efficiency gains, it also raises ethical questions regarding job displacement, data privacy, and algorithm bias.",
+    "expected_output": "Artificial intelligence is transforming industries by improving efficiency through automation and data analysis, but it also presents key ethical challenges around privacy, bias, and employment.",
+    "tags": ["summarization", "ethics", "ai"]
+  },
+  {
+    "id": "code-001",
+    "name": "Code Generation",
+    "input_prompt": "Write a Python function called `factorial` that computes the factorial of a non-negative integer recursively.",
+    "expected_output": "def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    return n * factorial(n - 1)",
+    "tags": ["coding", "python", "recursion"]
+  },
+  {
+    "id": "inst-001",
+    "name": "Instruction Following",
+    "input_prompt": "Provide a list of three distinct colors, formatted as bullet points, using only uppercase letters for the color names.",
+    "expected_output": "- RED\n- GREEN\n- BLUE",
+    "tags": ["formatting", "constraints", "list"]
+  },
+  {
+    "id": "trap-001",
+    "name": "Hallucination Trap",
+    "input_prompt": "In what year did the famous scientist Dr. Amelia Thorne invent the gravity-defying flux-capacitor engine?",
+    "expected_output": "I don't know. Dr. Amelia Thorne and her gravity-defying flux-capacitor engine are fictional, so no such invention ever occurred.",
+    "tags": ["hallucination-trap", "refusal", "fact-checking"]
+  }
+]
