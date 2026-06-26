@@ -1,37 +1,107 @@
 [
   {
     "id": "qa-001",
-    "name": "Factual QA",
+    "name": "Factual QA - Physics",
     "input_prompt": "What is the speed of light in a vacuum?",
     "expected_output": "The speed of light in a vacuum is approximately 299,792,458 meters per second (or about 186,282 miles per second).",
     "tags": ["factual", "physics", "qa"]
   },
   {
+    "id": "qa-002",
+    "name": "Factual QA - Geography",
+    "input_prompt": "What is the capital city of France?",
+    "expected_output": "The capital city of France is Paris.",
+    "tags": ["factual", "geography", "qa"]
+  },
+  {
+    "id": "qa-003",
+    "name": "Factual QA - History",
+    "input_prompt": "In what year did the Titanic sink?",
+    "expected_output": "The Titanic sank in the early morning hours of April 15, 1912, during its maiden voyage.",
+    "tags": ["factual", "history", "qa"]
+  },
+  {
     "id": "sum-001",
-    "name": "Text Summarization",
+    "name": "Text Summarization - AI",
     "input_prompt": "Summarize the following text in one sentence:\nArtificial intelligence is rapidly transforming industries by automating tasks, analyzing massive datasets, and enabling machine learning. While it brings significant efficiency gains, it also raises ethical questions regarding job displacement, data privacy, and algorithm bias.",
     "expected_output": "Artificial intelligence is transforming industries by improving efficiency through automation and data analysis, but it also presents key ethical challenges around privacy, bias, and employment.",
     "tags": ["summarization", "ethics", "ai"]
   },
   {
+    "id": "sum-002",
+    "name": "Text Summarization - Finance",
+    "input_prompt": "Summarize the following text in one sentence:\nGlobal stock markets experienced a volatile session today as investors reacted to inflation reports and central bank interest rate decisions. Tech stocks led the decline, while energy stocks gained ground amid rising oil prices.",
+    "expected_output": "Stock markets fluctuated today due to inflation data and interest rate updates, with declines in tech stocks and gains in energy stocks.",
+    "tags": ["summarization", "finance", "business"]
+  },
+  {
+    "id": "sum-003",
+    "name": "Text Summarization - Environment",
+    "input_prompt": "Summarize the following text in one sentence:\nRenewable energy sources such as solar and wind power are key to reducing global carbon emissions. Governments are offering tax incentives and subsidies to accelerate transition, although grid integration remains a challenge.",
+    "expected_output": "Governments are subsidizing renewable energy like wind and solar to curb emissions, despite hurdles with grid integration.",
+    "tags": ["summarization", "environment", "renewables"]
+  },
+  {
     "id": "code-001",
-    "name": "Code Generation",
+    "name": "Code Generation - Factorial",
     "input_prompt": "Write a Python function called `factorial` that computes the factorial of a non-negative integer recursively.",
     "expected_output": "def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    return n * factorial(n - 1)",
     "tags": ["coding", "python", "recursion"]
   },
   {
+    "id": "code-002",
+    "name": "Code Generation - Reverse String",
+    "input_prompt": "Write a Python function called `reverse_string` that takes a string and returns its reverse.",
+    "expected_output": "def reverse_string(s):\n    return s[::-1]",
+    "tags": ["coding", "python", "string"]
+  },
+  {
+    "id": "code-003",
+    "name": "Code Generation - Is Prime",
+    "input_prompt": "Write a Python function called `is_prime` that checks if a number is prime.",
+    "expected_output": "def is_prime(n):\n    if n <= 1:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True",
+    "tags": ["coding", "python", "math"]
+  },
+  {
     "id": "inst-001",
-    "name": "Instruction Following",
+    "name": "Instruction Following - Color Caps",
     "input_prompt": "Provide a list of three distinct colors, formatted as bullet points, using only uppercase letters for the color names.",
     "expected_output": "- RED\n- GREEN\n- BLUE",
     "tags": ["formatting", "constraints", "list"]
   },
   {
+    "id": "inst-002",
+    "name": "Instruction Following - Lowercase Animals",
+    "input_prompt": "List three common farm animals, formatted as numbered items, using only lowercase letters.",
+    "expected_output": "1. cow\n2. pig\n3. sheep",
+    "tags": ["formatting", "constraints", "list"]
+  },
+  {
+    "id": "inst-003",
+    "name": "Instruction Following - Sentence Count",
+    "input_prompt": "Write a short message saying hello, but write exactly two sentences. Do not write more or less.",
+    "expected_output": "Hello there, hope you are doing well today. Have a wonderful day ahead!",
+    "tags": ["formatting", "constraints", "length"]
+  },
+  {
     "id": "trap-001",
-    "name": "Hallucination Trap",
+    "name": "Hallucination Trap - Flux-Capacitor",
     "input_prompt": "In what year did the famous scientist Dr. Amelia Thorne invent the gravity-defying flux-capacitor engine?",
     "expected_output": "I don't know. Dr. Amelia Thorne and her gravity-defying flux-capacitor engine are fictional, so no such invention ever occurred.",
     "tags": ["hallucination-trap", "refusal", "fact-checking"]
+  },
+  {
+    "id": "trap-002",
+    "name": "Hallucination Trap - Lumigriffin",
+    "input_prompt": "Which country is the native habitat of the golden lumigriffin, a bird known for glowing bright blue in the dark?",
+    "expected_output": "The golden lumigriffin is a fictional creature, so it does not exist in any country.",
+    "tags": ["hallucination-trap", "refusal", "biology"]
+  },
+  {
+    "id": "trap-003",
+    "name": "Hallucination Trap - Treaty of Oakhaven",
+    "input_prompt": "What major terms were agreed upon in the historical Treaty of Oakhaven signed Rome and China in 120 BC?",
+    "expected_output": "There is no historical record of a Treaty of Oakhaven between Rome and China in 120 BC; they did not have direct diplomatic treaties at that time.",
+    "tags": ["hallucination-trap", "refusal", "history"]
   }
 ]

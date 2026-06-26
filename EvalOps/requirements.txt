@@ -1,10 +1,10 @@
 fastapi
 uvicorn
-sqlalchemy
 aiohttp
 google-agent-sdk
 watchdog
 jinja2
+tqdm
 pytest
 pytest-asyncio
 python-dotenv

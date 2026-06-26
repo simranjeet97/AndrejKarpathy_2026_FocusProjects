@@ -1,5 +1,6 @@
 import aiohttp
 import time
+import os
 from typing import Optional, Dict, Any, List
 from evalops.config import get_settings
 
@@ -16,6 +17,7 @@ class OllamaClient:
         self.settings = get_settings()
         self.base_url = self.settings.ollama_base_url.rstrip('/')
         self.timeout = aiohttp.ClientTimeout(total=120)
+        self.mock_mode = os.getenv("MOCK_OLLAMA", "false").lower() == "true"
 
     async def health_check(self) -> bool:
         """
@@ -24,6 +26,9 @@ class OllamaClient:
         Returns:
             bool: True if healthy, False otherwise.
         """
+        if self.mock_mode:
+            return True
+
         url = f"{self.base_url}/api/tags"
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -42,6 +47,9 @@ class OllamaClient:
         Raises:
             OllamaError: If API call fails.
         """
+        if self.mock_mode:
+            return ["llama3", "mistral", "phi3"]
+
         url = f"{self.base_url}/api/tags"
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -75,6 +83,42 @@ class OllamaClient:
         Raises:
             OllamaError: If generation fails.
         """
+        if self.mock_mode:
+            # Deterministic mock responses
+            if system_prompt and "evaluator" in system_prompt.lower():
+                # LLM Judge scoring mock
+                if "amelia thorne" in prompt.lower() and "flux-capacitor" in prompt.lower():
+                    # If model didn't refuse, trigger hallucination detect
+                    if "1985" in prompt or "invented" in prompt:
+                        response_text = '{"score": 0.0, "reason": "Model hallucinated fake historical fact.", "hallucination": true}'
+                    else:
+                        response_text = '{"score": 1.0, "reason": "Model correctly refused the fictional prompt.", "hallucination": false}'
+                else:
+                    response_text = '{"score": 0.9, "reason": "Output is correct and matches expected results.", "hallucination": false}'
+            elif system_prompt and "compare" in system_prompt.lower():
+                # Pairwise comparator mock
+                response_text = '{"winner": "A", "reason": "Output A is better structured."}'
+            else:
+                # Regular mock task completions
+                prompt_lower = prompt.lower()
+                if "speed of light" in prompt_lower:
+                    response_text = "The speed of light in a vacuum is approximately 299,792,458 meters per second."
+                elif "factorial" in prompt_lower:
+                    response_text = "def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    return n * factorial(n - 1)"
+                elif "colors" in prompt_lower:
+                    response_text = "- RED\n- GREEN\n- BLUE"
+                elif "amelia thorne" in prompt_lower:
+                    # Hallucination trap expect refusal
+                    response_text = "I don't know. Dr. Amelia Thorne is a fictional character, so no such invention exists."
+                else:
+                    response_text = f"Mock completion for model '{model}' prompt: '{prompt[:40]}'"
+            
+            return {
+                "text": response_text,
+                "tokens_used": 120,
+                "latency_ms": 15.0
+            }
+
         url = f"{self.base_url}/api/generate"
         payload = {
             "model": model,

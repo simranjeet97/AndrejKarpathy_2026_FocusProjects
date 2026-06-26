@@ -31,3 +31,12 @@ def get_settings() -> Settings:
     if _settings_instance is None:
         _settings_instance = Settings()
     return _settings_instance
+
+def reset_settings() -> None:
+    """
+    Reset the singleton settings instance.
+    Useful for testing to avoid state leakage.
+    """
+    global _settings_instance
+    _settings_instance = None
+

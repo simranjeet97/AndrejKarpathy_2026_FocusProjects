@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EvalOps Dashboard</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --card: #f3f4f6;
+      --border: #e5e7eb;
+      --accent: #6c63ff;
+      --pass: #22c55e;
+      --fail: #ef4444;
+      --warn: #f59e0b;
+      --star-active: #fbbf24;
+      --star-inactive: #d1d5db;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --text: #f3f4f6;
+        --text-muted: #9ca3af;
+        --card: #1a1d27;
+        --border: #2d313e;
+        --accent: #818cf8;
+        --pass: #22c55e;
+        --fail: #ef4444;
+        --warn: #f59e0b;
+        --star-inactive: #4b5563;
+      }
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-badge {
+      background-color: var(--accent);
+      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85em;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    select {
+      background-color: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    /* Summary cards */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 0.85em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .card-value {
+      font-size: 1.8em;
+      font-weight: bold;
+    }
+
+    /* Layout structure */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-box {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    /* Table styling */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+
+    .status-pass { background-color: rgba(34, 197, 94, 0.15); color: var(--pass); }
+    .status-warn { background-color: rgba(245, 158, 11, 0.15); color: var(--warn); }
+    .status-fail { background-color: rgba(239, 68, 68, 0.15); color: var(--fail); }
+
+    /* Collapsible regression panel */
+    .collapsible {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .collapsible-header {
+      padding: 12px 16px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: rgba(0,0,0,0.02);
+    }
+
+    .collapsible-content {
+      padding: 16px;
+      display: none;
+      border-top: 1px solid var(--border);
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+
+    /* Feedback Stars widget */
+    .feedback-item {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+
+    .feedback-item:last-child {
+      border-bottom: none;
+    }
+
+    .stars-container {
+      display: flex;
+      gap: 4px;
+      margin: 8px 0;
+    }
+
+    .star {
+      font-size: 1.5em;
+      cursor: pointer;
+      color: var(--star-inactive);
+      transition: color 0.1s;
+    }
+
+    textarea {
+      width: 100%;
+      height: 60px;
+      background-color: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <h2>EvalOps</h2>
+      <span class="logo-badge">Local-First Evals</span>
+    </div>
+    <div>
+      <button id="btnRunEval">Run Evaluation</button>
+    </div>
+  </header>
+
+  <div class="controls-row">
+    <label for="runSelect">Select Evaluation Run:</label>
+    <select id="runSelect">
+      <option value="">-- No Runs Loaded --</option>
+    </select>
+    <button id="btnLoadRun">Load</button>
+  </div>
+
+  <!-- Summary row -->
+  <div class="summary-row">
+    <div class="card">
+      <div class="card-title">Total Tasks</div>
+      <div class="card-value" id="valTotalTasks">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pass Rate</div>
+      <div class="card-value" id="valPassRate">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Score</div>
+      <div class="card-value" id="valAvgScore">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Latency</div>
+      <div class="card-value" id="valAvgLatency">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Regressions</div>
+      <div class="card-value" id="valRegressions" style="color: var(--fail)">-</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Left panel -->
+    <div>
+      <!-- Results Table -->
+      <div class="section-box">
+        <div class="section-title">Evaluation Details</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Task Name</th>
+                <th>Model</th>
+                <th>Score</th>
+                <th>Latency</th>
+                <th>Tokens</th>
+                <th>Hallucination</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted);">Please select and load an evaluation run to view results.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Trend Chart -->
+      <div class="section-box">
+        <div class="section-title">Score Performance Curve</div>
+        <div style="position: relative; height: 300px; width: 100%;">
+          <canvas id="scoreChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div>
+      <!-- Regressions Panel -->
+      <div class="section-box">
+        <div class="section-title">Detected Regressions</div>
+        <div id="regressionsPanelBody">
+          <p style="color: var(--text-muted); font-size: 0.9em;">No regressions detected in the active run.</p>
+        </div>
+      </div>
+
+      <!-- Human Feedback Panel -->
+      <div class="section-box">
+        <div class="section-title">Human Feedback Audit</div>
+        <div id="feedbackPanelBody">
+          <p style="color: var(--text-muted); font-size: 0.9em;">Load a run to evaluate outputs and submit ratings.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

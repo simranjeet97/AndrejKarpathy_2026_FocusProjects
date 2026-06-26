@@ -133,13 +133,19 @@ class SQLiteStorage:
 
     def save_run(self, run: EvalRun) -> str:
         """
-        Save an evaluation run.
+        Save or update an evaluation run (upsert).
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO eval_runs (id, task_id, model, output, score, latency_ms, tokens_used, run_at, run_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    output=excluded.output,
+                    score=excluded.score,
+                    latency_ms=excluded.latency_ms,
+                    tokens_used=excluded.tokens_used,
+                    run_id=excluded.run_id
             """, (run.id, run.task_id, run.model, run.output, run.score, run.latency_ms, run.tokens_used, run.run_at, run.run_id))
             conn.commit()
         return run.id

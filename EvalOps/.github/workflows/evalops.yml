@@ -1,0 +1,58 @@
+name: EvalOps CI Suite
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  evalops-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Fallback to installing packages directly if requirements.txt isn't in root
+          pip install -r requirements.txt
+
+      - name: Run Pytest
+        run: python3 -m pytest tests/ -v
+        env:
+          MOCK_OLLAMA: "true"
+          DB_PATH: "./evalops_test.db"
+
+      - name: Start FastAPI Server
+        run: |
+          python3 -m uvicorn evalops.api:app --host 127.0.0.1 --port 8000 &
+          # Give it a few seconds to boot up
+          sleep 3
+        env:
+          MOCK_OLLAMA: "true"
+          DB_PATH: "./evalops_ci.db"
+
+      - name: Seed Database
+        run: python3 scripts/seed_db.py
+        env:
+          MOCK_OLLAMA: "true"
+          DB_PATH: "./evalops_ci.db"
+
+      - name: Run CI Trigger and Check Regressions
+        run: python3 scripts/ci_trigger.py --fail-on-regression
+        env:
+          EVALOPS_API_URL: "http://127.0.0.1:8000"
+          EVALOPS_MODEL: "llama3"
+          EVALOPS_DATASET: "golden_datasets/example_dataset.json"
+          MOCK_OLLAMA: "true"
+          FAIL_ON_REGRESSION: "true"
+          DB_PATH: "./evalops_ci.db"
