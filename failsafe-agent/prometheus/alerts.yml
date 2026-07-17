@@ -1,0 +1,94 @@
+groups:
+  - name: failsafe_agent_alerts
+    rules:
+
+      # -------------------------------------------------------------------
+      # 1. LLMHighErrorRate
+      # Fires when more than 5% of LLM requests fail over a 5-minute window.
+      # -------------------------------------------------------------------
+      - alert: LLMHighErrorRate
+        expr: >
+          (
+            sum(rate(llm_request_duration_seconds_count{status="error"}[5m]))
+            /
+            clamp_min(sum(rate(llm_request_duration_seconds_count[5m])), 1)
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "LLM error rate exceeds 5% SLO"
+          description: >
+            The LLM error rate is {{ $value | humanizePercentage }} over the
+            last 5 minutes, which exceeds the 5% threshold. Possible causes:
+            Anthropic outage, invalid API key, circuit breaker open, or
+            upstream rate-limiting.
+          runbook_url: "https://wiki.internal/runbooks/failsafe/llm-high-error-rate"
+
+      # -------------------------------------------------------------------
+      # 2. CircuitBreakerOpen
+      # Fires when any circuit breaker is in the OPEN state for 1 minute.
+      # -------------------------------------------------------------------
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Circuit breaker OPEN for service {{ $labels.service }}"
+          description: >
+            The circuit breaker for service "{{ $labels.service }}" has been in
+            the OPEN state for at least 1 minute. All calls to this service are
+            being rejected immediately. Investigate the upstream service health
+            and check recent error logs before attempting manual reset.
+          runbook_url: "https://wiki.internal/runbooks/failsafe/circuit-breaker-open"
+
+      # -------------------------------------------------------------------
+      # 3. HighEscalationRate
+      # Fires when more than 30% of conversations are escalated over 10 minutes.
+      # -------------------------------------------------------------------
+      - alert: HighEscalationRate
+        expr: >
+          (
+            sum(rate(escalations_total[10m]))
+            /
+            clamp_min(sum(rate(conversation_duration_seconds_count[10m])), 1)
+          ) > 0.30
+        for: 5m
+        labels:
+          severity: warning
+          team: support
+        annotations:
+          summary: "Escalation rate exceeds 30% of conversations"
+          description: >
+            {{ $value | humanizePercentage }} of conversations over the last
+            10 minutes are being escalated to human agents. This exceeds the
+            30% threshold. Possible causes: confidence scoring too aggressive,
+            LLM model degraded, guardrail rules too strict, or an increase in
+            complex customer queries.
+          runbook_url: "https://wiki.internal/runbooks/failsafe/high-escalation-rate"
+
+      # -------------------------------------------------------------------
+      # 4. ConversationP99Latency
+      # Fires when the p99 LLM request latency exceeds 15s for 3 minutes.
+      # -------------------------------------------------------------------
+      - alert: ConversationP99Latency
+        expr: >
+          histogram_quantile(
+            0.99,
+            sum(rate(llm_request_duration_seconds_bucket[5m])) by (le)
+          ) > 15
+        for: 3m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "p99 LLM request latency exceeds 15s"
+          description: >
+            The 99th-percentile LLM request latency is {{ $value | humanizeDuration }}
+            over the last 5 minutes, which exceeds the 15-second threshold.
+            Check for LLM provider slowness, high retry counts, or excessive
+            token payloads inflating response time.
+          runbook_url: "https://wiki.internal/runbooks/failsafe/p99-latency-breach"

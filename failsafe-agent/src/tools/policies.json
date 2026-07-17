@@ -1,0 +1,37 @@
+[
+  {
+    "id": "policy_refund_window",
+    "title": "Refund Window and Timeline Policy",
+    "content": "Customers are eligible for a full refund on purchases made within 30 days of the purchase date. The charge must be in a succeeded status. Refunds are processed back to the original payment method within 5-10 business days.",
+    "keywords": ["refund", "window", "timeline", "30 days", "reimbursement"],
+    "category": "Billing"
+  },
+  {
+    "id": "policy_damaged_goods",
+    "title": "Damaged Goods and Returns Policy",
+    "content": "If item arrives damaged, customers must report it within 7 days of delivery. Photographic evidence of damage is required. A replacement will be shipped or a refund issued immediately upon verification.",
+    "keywords": ["damaged", "broken", "returns", "reporting", "photo evidence"],
+    "category": "Shipping"
+  },
+  {
+    "id": "policy_subscription_cancel",
+    "title": "Subscription Cancellation Policy",
+    "content": "Subscriptions can be cancelled at any time through the customer portal. Cancellation takes effect at the end of the current billing cycle. No partial refunds are provided for mid-cycle cancellations.",
+    "keywords": ["subscription", "cancellation", "cancel", "billing cycle", "portal"],
+    "category": "Billing"
+  },
+  {
+    "id": "policy_lost_shipment",
+    "title": "Lost Shipment Policy",
+    "content": "A shipment is considered lost if it is not delivered within 15 business days for domestic orders or 30 days for international. Once verified, we will issue a replacement shipment or store credit.",
+    "keywords": ["lost", "shipment", "missing package", "delivery delay", "shipping"],
+    "category": "Shipping"
+  },
+  {
+    "id": "policy_pricing_disputes",
+    "title": "Pricing Disputes and Adjustments",
+    "content": "If a customer claims they were charged incorrectly, support must verify the charge amount against the invoice. Price matching is only valid against our official promotional campaigns within 7 days of purchase.",
+    "keywords": ["price matching", "disputes", "charge error", "invoice", "promotional"],
+    "category": "Billing"
+  }
+]

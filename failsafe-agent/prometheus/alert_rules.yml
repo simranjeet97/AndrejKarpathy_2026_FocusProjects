@@ -1,0 +1,65 @@
+groups:
+  - name: failsafe_agent_slos
+    interval: 30s
+    rules:
+      # SLO 1: p99 conversation latency < 10s
+      - record: failsafe:conversation_p99_latency
+        expr: >
+          histogram_quantile(
+            0.99,
+            sum(rate(conversation_duration_seconds_bucket[5m])) by (le)
+          )
+
+      - alert: ConversationLatencyP99Exceeded
+        expr: >
+          histogram_quantile(
+            0.99,
+            sum(rate(conversation_duration_seconds_bucket[5m])) by (le)
+          ) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 conversation latency SLO breach"
+          description: "p99 conversation latency is {{ $value | humanizeDuration }}, exceeds 10s SLO"
+
+      # SLO 2: error rate < 1%
+      - record: failsafe:llm_error_rate
+        expr: >
+          sum(rate(llm_request_duration_seconds_count{status="error"}[5m]))
+          /
+          sum(rate(llm_request_duration_seconds_count[5m]))
+
+      - alert: LLMErrorRateExceeded
+        expr: >
+          (
+            sum(rate(llm_request_duration_seconds_count{status="error"}[5m]))
+            /
+            sum(rate(llm_request_duration_seconds_count[5m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLM error rate SLO breach"
+          description: "LLM error rate is {{ $value | humanizePercentage }}, exceeds 1% SLO"
+
+      # Circuit breaker open alert
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 1
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit breaker OPEN for {{ $labels.service }}"
+          description: "Circuit breaker for service {{ $labels.service }} has been OPEN for 30s+"
+
+      # Escalation spike
+      - alert: EscalationRateSpike
+        expr: rate(escalations_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High escalation rate detected"
+          description: "More than 0.1 escalations/sec in the last 5m"
