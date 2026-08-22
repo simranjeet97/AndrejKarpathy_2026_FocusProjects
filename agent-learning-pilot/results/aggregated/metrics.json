@@ -1,0 +1,90 @@
+{
+  "baseline": {
+    "cross_family": {
+      "mean_success_rate": 0.3333333333333333,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "held_out": {
+      "mean_success_rate": 0.0,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "regression": {
+      "mean_success_rate": 0.25,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "feedback": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    }
+  },
+  "memory": {
+    "cross_family": {
+      "mean_success_rate": 0.5833333333333334,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "held_out": {
+      "mean_success_rate": 1.0,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "regression": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "feedback": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    }
+  },
+  "reflection": {
+    "cross_family": {
+      "mean_success_rate": 0.3333333333333333,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "held_out": {
+      "mean_success_rate": 0.0,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "regression": {
+      "mean_success_rate": 0.25,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "feedback": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    }
+  },
+  "workflow": {
+    "cross_family": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "held_out": {
+      "mean_success_rate": 1.0,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "regression": {
+      "mean_success_rate": 1.0,
+      "std_dev": 0.0,
+      "runs_count": 1
+    },
+    "feedback": {
+      "mean_success_rate": 0.75,
+      "std_dev": 0.0,
+      "runs_count": 1
+    }
+  }
+}

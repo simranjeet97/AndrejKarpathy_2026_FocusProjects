@@ -1,0 +1,9 @@
+{
+  "id": "se_11",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Event Dispatcher",
+  "specification": "Implement solution for event_dispatcher handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

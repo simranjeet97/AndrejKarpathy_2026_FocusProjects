@@ -1,0 +1,9 @@
+{
+  "id": "db_03",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Mutable Default",
+  "specification": "Implement solution for mutable_default handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

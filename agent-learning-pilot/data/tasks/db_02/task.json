@@ -1,0 +1,9 @@
+{
+  "id": "db_02",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Wrong Comparison",
+  "specification": "Implement solution for wrong_comparison handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

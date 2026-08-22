@@ -1,0 +1,9 @@
+{
+  "id": "se_10",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Context Manager",
+  "specification": "Implement solution for context_manager handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "dm_01",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Filter By Predicate",
+  "specification": "Implement solution for filter_by_predicate handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

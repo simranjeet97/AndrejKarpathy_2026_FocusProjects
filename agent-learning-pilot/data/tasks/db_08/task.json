@@ -1,0 +1,9 @@
+{
+  "id": "db_08",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Wrong Sort Key",
+  "specification": "Implement solution for wrong_sort_key handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

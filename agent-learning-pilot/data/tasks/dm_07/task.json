@@ -1,0 +1,9 @@
+{
+  "id": "dm_07",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Pivot Table",
+  "specification": "Implement solution for pivot_table handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "dm_08",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Running Average",
+  "specification": "Implement solution for running_average handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

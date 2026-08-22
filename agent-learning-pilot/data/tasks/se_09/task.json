@@ -1,0 +1,9 @@
+{
+  "id": "se_09",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Decorator With Args",
+  "specification": "Implement solution for decorator_with_args handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

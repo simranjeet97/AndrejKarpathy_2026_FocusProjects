@@ -1,0 +1,9 @@
+{
+  "id": "se_03",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Json Serialization",
+  "specification": "Implement solution for json_serialization handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

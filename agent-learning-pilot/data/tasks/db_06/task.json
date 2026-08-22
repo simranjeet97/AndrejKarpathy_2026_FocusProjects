@@ -1,0 +1,9 @@
+{
+  "id": "db_06",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Race Condition Sim",
+  "specification": "Implement solution for race_condition_sim handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

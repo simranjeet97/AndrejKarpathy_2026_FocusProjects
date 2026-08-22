@@ -1,0 +1,9 @@
+{
+  "id": "db_04",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Shallow Copy Bug",
+  "specification": "Implement solution for shallow_copy_bug handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

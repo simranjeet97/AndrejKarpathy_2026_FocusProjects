@@ -1,0 +1,9 @@
+{
+  "id": "db_10",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Incorrect Regex",
+  "specification": "Implement solution for incorrect_regex handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

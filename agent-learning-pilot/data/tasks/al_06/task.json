@@ -1,0 +1,9 @@
+{
+  "id": "al_06",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Knapsack 01",
+  "specification": "Implement solution for knapsack_01 handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

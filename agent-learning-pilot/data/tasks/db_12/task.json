@@ -1,0 +1,9 @@
+{
+  "id": "db_12",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Closure Variable Capture",
+  "specification": "Implement solution for closure_variable_capture handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

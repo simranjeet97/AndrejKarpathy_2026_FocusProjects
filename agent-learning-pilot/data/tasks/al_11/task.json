@@ -1,0 +1,9 @@
+{
+  "id": "al_11",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Longest Common Subsequence",
+  "specification": "Implement solution for longest_common_subsequence handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

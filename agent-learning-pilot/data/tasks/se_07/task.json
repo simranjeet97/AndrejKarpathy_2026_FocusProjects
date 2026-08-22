@@ -1,0 +1,9 @@
+{
+  "id": "se_07",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Env Variable Config",
+  "specification": "Implement solution for env_variable_config handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

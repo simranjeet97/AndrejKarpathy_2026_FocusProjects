@@ -1,0 +1,9 @@
+{
+  "id": "dm_09",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Missing Value Imputation",
+  "specification": "Implement solution for missing_value_imputation handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

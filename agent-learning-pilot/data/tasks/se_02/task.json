@@ -1,0 +1,9 @@
+{
+  "id": "se_02",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Config Parser",
+  "specification": "Implement solution for config_parser handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

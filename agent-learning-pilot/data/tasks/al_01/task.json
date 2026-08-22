@@ -1,0 +1,9 @@
+{
+  "id": "al_01",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Binary Search Variants",
+  "specification": "Implement solution for binary_search_variants handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

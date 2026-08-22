@@ -1,0 +1,56 @@
+# =============================================================================
+# Agent Learning Pilot — Experiment Configuration
+# =============================================================================
+# This configuration drives the full experimental protocol.
+# All values have sensible defaults for a pilot experiment.
+# Adjust model endpoint and budget based on your local hardware.
+
+experiment:
+  name: controlled_pilot
+  description: "Pilot experiment testing feedback persistence and transfer"
+  seed: 42
+  runs: 3  # Number of independent trials per condition
+  conditions:
+    - baseline
+    - reflection
+    - memory
+    - workflow
+
+model:
+  provider: local  # "local" for OpenAI-compatible endpoint, "mock" for testing
+  endpoint: "http://localhost:11434/v1"
+  model: "codellama:7b"  # Change to your local model
+  temperature: 0.0  # Deterministic for reproducibility
+  max_tokens: 4096  # Max tokens per generation call
+
+budget:
+  # These limits are applied per-task to compute-match conditions
+  max_model_calls: 20     # Max LLM calls per task
+  max_tokens: 120000      # Max total tokens per task
+  max_test_runs: 30       # Max test executions per task
+  task_timeout: 120       # Seconds per task execution
+
+dataset:
+  tasks_dir: "data/tasks"
+  splits_dir: "configs/splits"
+  feedback_split: "configs/splits/feedback.json"
+  validation_split: "configs/splits/validation.json"
+  test_split: "configs/splits/test.json"
+  cross_family_split: "configs/splits/cross_family.json"
+  regression_split: "configs/splits/regression.json"
+
+retention_test:
+  # Number of unrelated tasks to insert between feedback and re-evaluation
+  intervening_tasks: 5
+
+output:
+  results_dir: "results"
+  raw_dir: "results/raw"
+  aggregated_dir: "results/aggregated"
+  figures_dir: "results/figures"
+  logs_dir: "results/logs"
+
+logging:
+  level: "INFO"
+  format: "json"  # "json" for machine-readable, "text" for human-readable
+  log_prompts: false  # Set true to log full prompts (large output)

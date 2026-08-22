@@ -1,0 +1,9 @@
+{
+  "id": "dm_02",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Group By Key",
+  "specification": "Implement solution for group_by_key handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

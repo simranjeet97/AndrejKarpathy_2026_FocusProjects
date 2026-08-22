@@ -1,0 +1,17 @@
+condition,phase,mean_success_rate,std_dev,runs_count
+baseline,cross_family,1.0000,0.0000,3
+baseline,held_out,1.0000,0.0000,3
+baseline,regression,1.0000,0.0000,3
+baseline,feedback,1.0000,0.0000,3
+memory,cross_family,1.0000,0.0000,3
+memory,held_out,1.0000,0.0000,3
+memory,regression,1.0000,0.0000,3
+memory,feedback,1.0000,0.0000,3
+reflection,cross_family,1.0000,0.0000,3
+reflection,held_out,1.0000,0.0000,3
+reflection,regression,1.0000,0.0000,3
+reflection,feedback,1.0000,0.0000,3
+workflow,cross_family,1.0000,0.0000,3
+workflow,held_out,1.0000,0.0000,3
+workflow,regression,1.0000,0.0000,3
+workflow,feedback,1.0000,0.0000,3

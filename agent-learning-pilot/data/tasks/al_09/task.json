@@ -1,0 +1,9 @@
+{
+  "id": "al_09",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Dijkstra",
+  "specification": "Implement solution for dijkstra handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "se_01",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Input Validation",
+  "specification": "Implement solution for input_validation handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "db_05",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Exception Swallowing",
+  "specification": "Implement solution for exception_swallowing handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

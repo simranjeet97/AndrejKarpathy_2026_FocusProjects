@@ -1,0 +1,9 @@
+{
+  "id": "dm_05",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Deduplicate Records",
+  "specification": "Implement solution for deduplicate_records handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

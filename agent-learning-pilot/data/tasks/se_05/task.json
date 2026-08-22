@@ -1,0 +1,9 @@
+{
+  "id": "se_05",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Api Rate Limiter",
+  "specification": "Implement solution for api_rate_limiter handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

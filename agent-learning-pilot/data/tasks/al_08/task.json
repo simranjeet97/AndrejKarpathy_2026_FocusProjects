@@ -1,0 +1,9 @@
+{
+  "id": "al_08",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Trie Autocomplete",
+  "specification": "Implement solution for trie_autocomplete handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

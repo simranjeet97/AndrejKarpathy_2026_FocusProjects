@@ -1,0 +1,9 @@
+{
+  "id": "al_12",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Union Find",
+  "specification": "Implement solution for union_find handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

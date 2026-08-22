@@ -1,0 +1,9 @@
+{
+  "id": "db_09",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Uninitialized Accumulator",
+  "specification": "Implement solution for uninitialized_accumulator handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

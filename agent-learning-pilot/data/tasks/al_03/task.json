@@ -1,0 +1,9 @@
+{
+  "id": "al_03",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Merge Intervals",
+  "specification": "Implement solution for merge_intervals handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

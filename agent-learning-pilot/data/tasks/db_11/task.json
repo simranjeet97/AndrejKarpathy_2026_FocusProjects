@@ -1,0 +1,9 @@
+{
+  "id": "db_11",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Generator Exhaustion",
+  "specification": "Implement solution for generator_exhaustion handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

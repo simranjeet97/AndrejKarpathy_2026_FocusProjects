@@ -1,0 +1,9 @@
+{
+  "id": "al_05",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Topological Sort",
+  "specification": "Implement solution for topological_sort handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

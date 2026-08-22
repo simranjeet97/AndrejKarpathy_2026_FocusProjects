@@ -1,0 +1,9 @@
+{
+  "id": "al_07",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Sliding Window Max",
+  "specification": "Implement solution for sliding_window_max handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

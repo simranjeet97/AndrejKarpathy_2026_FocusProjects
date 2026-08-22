@@ -1,0 +1,9 @@
+{
+  "id": "db_07",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Integer Overflow Py",
+  "specification": "Implement solution for integer_overflow_py handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

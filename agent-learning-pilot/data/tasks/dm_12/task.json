@@ -1,0 +1,9 @@
+{
+  "id": "dm_12",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Recursive Dict Diff",
+  "specification": "Implement solution for recursive_dict_diff handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

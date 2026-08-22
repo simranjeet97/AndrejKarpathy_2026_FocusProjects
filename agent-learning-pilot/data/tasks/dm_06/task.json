@@ -1,0 +1,9 @@
+{
+  "id": "dm_06",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Merge Sorted Streams",
+  "specification": "Implement solution for merge_sorted_streams handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

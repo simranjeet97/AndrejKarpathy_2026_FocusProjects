@@ -1,0 +1,9 @@
+{
+  "id": "dm_04",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Nested Json Flatten",
+  "specification": "Implement solution for nested_json_flatten handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

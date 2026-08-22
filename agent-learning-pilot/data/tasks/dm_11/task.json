@@ -1,0 +1,9 @@
+{
+  "id": "dm_11",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Schema Validation",
+  "specification": "Implement solution for schema_validation handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

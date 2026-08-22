@@ -1,0 +1,9 @@
+{
+  "id": "db_01",
+  "family": "debugging",
+  "difficulty": "medium",
+  "title": "Off By One Loop",
+  "specification": "Implement solution for off_by_one_loop handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

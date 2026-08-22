@@ -1,0 +1,9 @@
+{
+  "id": "se_06",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Plugin Registry",
+  "specification": "Implement solution for plugin_registry handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "dm_10",
+  "family": "data_manipulation",
+  "difficulty": "medium",
+  "title": "Time Series Resample",
+  "specification": "Implement solution for time_series_resample handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

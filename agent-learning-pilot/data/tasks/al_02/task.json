@@ -1,0 +1,9 @@
+{
+  "id": "al_02",
+  "family": "algorithms",
+  "difficulty": "medium",
+  "title": "Bfs Shortest Path",
+  "specification": "Implement solution for bfs_shortest_path handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "se_08",
+  "family": "software_engineering",
+  "difficulty": "medium",
+  "title": "Builder Pattern",
+  "specification": "Implement solution for builder_pattern handling edge cases and empty inputs.",
+  "timeout_seconds": 30,
+  "expected_command": "pytest"
+}
