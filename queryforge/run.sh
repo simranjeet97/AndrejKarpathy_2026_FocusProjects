@@ -25,12 +25,18 @@ if [ ! -f "queryforge.db" ]; then
   echo "Database initialized successfully."
 fi
 
-# 3. Detect correct Python 3.10+ interpreter (since PEP 604 'str | None' union syntax is used)
-PYTHON_CMD="python3"
-if [ -f "/opt/homebrew/opt/python@3.10/bin/python3.10" ]; then
+# 3. Detect Python interpreter (.venv preferred, then 3.11+)
+if [ -f ".venv/bin/python" ]; then
+  PYTHON_CMD=".venv/bin/python"
+elif [ -f "/opt/homebrew/opt/python@3.10/bin/python3.10" ]; then
   PYTHON_CMD="/opt/homebrew/opt/python@3.10/bin/python3.10"
-elif command -v python3.10 &> /dev/null; then
-  PYTHON_CMD="python3.10"
+else
+  for ver in python3.13 python3.12 python3.11 python3; do
+    if command -v "$ver" &> /dev/null; then
+      PYTHON_CMD="$ver"
+      break
+    fi
+  done
 fi
 
 echo "Using Python interpreter: $PYTHON_CMD"

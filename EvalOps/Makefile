@@ -11,16 +11,16 @@ setup-ollama:
 
 # ─── Run API Server ───────────────────────────────────────────────────────────
 run:
-	uvicorn evalops.api:app --reload --port 8000
+	PYTHONPATH=. uvicorn evalops.api:app --reload --port 8000
 
 # ─── Run Tests ────────────────────────────────────────────────────────────────
 test:
-	MOCK_OLLAMA=true pytest tests/ -v --tb=short
+	PYTHONPATH=. MOCK_OLLAMA=true pytest tests/ -v --tb=short
 
 # ─── Run Evaluation ───────────────────────────────────────────────────────────
 eval:
 	mkdir -p results
-	python3 -m evalops.runner --dataset golden_datasets/example_dataset.json --model qwen2.5:7b --output results/latest.json
+	PYTHONPATH=. python3 -m evalops.runner --dataset golden_datasets/example_dataset.json --model qwen2.5:7b --output results/latest.json
 
 # ─── File Watcher ─────────────────────────────────────────────────────────────
 watch:

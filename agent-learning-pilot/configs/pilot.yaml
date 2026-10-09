@@ -19,7 +19,7 @@ experiment:
 model:
   provider: local  # "local" for OpenAI-compatible endpoint, "mock" for testing
   endpoint: "http://localhost:11434/v1"
-  model: "codellama:7b"  # Change to your local model
+  model: "qwen2.5:7b"  # Local Ollama model
   temperature: 0.0  # Deterministic for reproducibility
   max_tokens: 4096  # Max tokens per generation call
 

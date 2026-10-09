@@ -13,8 +13,8 @@ class Settings:
     """Settings class to manage configuration parameters loaded from environment variables."""
     ollama_base_url: str = field(default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
     db_path: str = field(default_factory=lambda: os.getenv("DB_PATH", "./evalops.db"))
-    default_model: str = field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "llama3"))
-    judge_model: str = field(default_factory=lambda: os.getenv("JUDGE_MODEL", "llama3"))
+    default_model: str = field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "qwen2.5:7b"))
+    judge_model: str = field(default_factory=lambda: os.getenv("JUDGE_MODEL", "qwen2.5:7b"))
     judge_threshold: float = field(default_factory=lambda: float(os.getenv("JUDGE_THRESHOLD", "0.7")))
 
 # Singleton instance

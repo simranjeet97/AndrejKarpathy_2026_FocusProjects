@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 aiohttp
-google-agent-sdk
+google-adk
 watchdog
 jinja2
 tqdm

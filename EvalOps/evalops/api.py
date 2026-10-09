@@ -277,9 +277,9 @@ async def serve_dashboard(
     unique_run_ids = list(set(r.run_id for r in all_runs))
     
     return templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        {"run_ids": unique_run_ids}
+        request=request,
+        name="dashboard.html",
+        context={"run_ids": unique_run_ids}
     )
 
 @app.get("/runs")

@@ -7,8 +7,14 @@ import logging
 from typing import List, Dict, Any, Optional
 from tqdm import tqdm
 
-from google.adk import Agent
-from google.adk.tools import FunctionTool
+try:
+    from google.adk import Agent
+    from google.adk.tools import FunctionTool
+    _ADK_AVAILABLE = True
+except ImportError:
+    Agent = None
+    FunctionTool = None
+    _ADK_AVAILABLE = False
 
 from evalops.config import get_settings
 from evalops.models import EvalTask, EvalRun
@@ -55,13 +61,17 @@ async def list_available_models() -> str:
         return json.dumps({"error": str(e)})
 
 # Instantiating the Google Agent SDK Agent
-eval_agent = Agent(
-    name="eval_runner",
-    description="Runs LLM eval tasks",
-    tools=[
-        FunctionTool(run_eval_task),
-        FunctionTool(list_available_models)
-    ]
+eval_agent = (
+    Agent(
+        name="eval_runner",
+        description="Runs LLM eval tasks",
+        tools=[
+            FunctionTool(run_eval_task),
+            FunctionTool(list_available_models)
+        ]
+    )
+    if _ADK_AVAILABLE
+    else None
 )
 
 class EvalRunner:

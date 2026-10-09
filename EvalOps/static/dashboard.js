@@ -56,7 +56,7 @@ async function loadRunSelector() {
 
 // Trigger a mock/new run evaluation run for local testing
 async function triggerNewEvaluation() {
-  const model = prompt("Enter model name to evaluate:", "llama3");
+  const model = prompt("Enter model name to evaluate:", "qwen2.5:7b");
   if (!model) return;
   
   try {

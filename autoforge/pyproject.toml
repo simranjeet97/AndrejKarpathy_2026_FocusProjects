@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "autoforge"
+version = "0.1.0"
+description = "AutoForge: Automated agent and sandbox execution engine"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+anthropic = "*"
+pygithub = "*"
+docker = "*"
+celery = {extras = ["redis"], version = "*"}
+asyncpg = "*"
+fastapi = "*"
+uvicorn = "*"
+structlog = "*"
+pydantic-settings = "*"
+httpx = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+pytest-docker = "*"
+ruff = "*"
+mypy = "*"
+freezegun = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
