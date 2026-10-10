@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🧠 Andrej Karpathy 2026 — AI Systems Engineering
 
@@ -20,18 +20,33 @@
 
 A hands-on engineering curriculum inspired by [Andrej Karpathy's 2026 roadmap](https://x.com/karpathy) focused on the **boring things that actually compound** in modern AI systems:
 
-| Skill | Where You Learn It |
-|---|---|
-| **Context Engineering** | CodeLensAI — deciding *what* context matters for a PR review |
-| **Tool Design** | QueryForge — building narrow, safe, composable tools |
-| **Agent Orchestration** | VentureMind — coordinating 5 specialist agents |
-| **Eval Discipline** | EvalOps — CI/CD for prompts with regression detection |
-| **Agent Learning** | Agent Learning Pilot — measuring if agents improve with feedback |
-| **Reliability Engineering** | FailSafe Agent — circuit breakers, fallback models, audit trails |
-| **Harness Engineering** | AutoForge — sandboxed code execution with verification loops |
-| **Full-Stack AI Ops** | SentinelOps — all of the above in one capstone system |
+| Skill | Where You Learn It | Codebase Link |
+|---|---|---|
+| **Context Engineering** | CodeLensAI — deciding *what* context matters for a PR review | [`./CodeLensAI`](./CodeLensAI) |
+| **Tool Design** | QueryForge — building narrow, safe, composable tools | [`./queryforge`](./queryforge) |
+| **Agent Orchestration** | VentureMind — coordinating 5 specialist agents | [`./VentureMind`](./VentureMind) |
+| **Eval Discipline** | EvalOps — CI/CD for prompts with regression detection | [`./EvalOps`](./EvalOps) |
+| **Agent Learning** | Agent Learning Pilot — measuring if agents improve with feedback | [`./agent-learning-pilot`](./agent-learning-pilot) |
+| **Reliability Engineering** | FailSafe Agent — circuit breakers, fallback models, audit trails | [`./failsafe-agent`](./failsafe-agent) |
+| **Harness Engineering** | AutoForge — sandboxed code execution with verification loops | [`./autoforge`](./autoforge) |
+| **Full-Stack AI Ops** | SentinelOps — all of the above in one capstone system | [`./SentinelOps`](./SentinelOps) |
 
-Every project runs **100% locally** using Ollama — no paid API keys required.
+Every project runs **100% locally** using Ollama — zero paid API keys required.
+
+---
+
+## ⚡ Project Suite Matrix
+
+| # | Project | Core Domain | Port | Dashboard URL | Direct Docs |
+|---|---|---|---|---|---|
+| 1 | [**EvalOps**](./EvalOps) | Prompt Regression & Evals | `8000` | [localhost:8000/dashboard](http://localhost:8000/dashboard) | [EvalOps/README.md](./EvalOps/README.md) |
+| 2 | [**QueryForge**](./queryforge) | Multi-Tool Agent Routing | `8001` | [localhost:8001](http://localhost:8001) | [queryforge/README.md](./queryforge/README.md) |
+| 3 | [**VentureMind**](./VentureMind) | Due Diligence Multi-Agent | `8002` | [localhost:8002](http://localhost:8002) | [VentureMind/README.md](./VentureMind/README.md) |
+| 4 | [**CodeLensAI**](./CodeLensAI) | Context Packing PR Review | `8003` | [localhost:8003](http://localhost:8003) | [CodeLensAI/README.md](./CodeLensAI/README.md) |
+| 5 | [**Agent Learning Pilot**](./agent-learning-pilot) | Feedback & Retention Science | `8004` | [localhost:8004](http://localhost:8004) | [agent-learning-pilot/README.md](./agent-learning-pilot/README.md) |
+| 6 | [**FailSafe Agent**](./failsafe-agent) | Fault-Tolerant Support Agent | `8005` | [localhost:8005](http://localhost:8005) | [failsafe-agent/README.md](./failsafe-agent/README.md) |
+| 7 | [**AutoForge**](./autoforge) | Autonomous Coding Sandbox | `8006` | [localhost:8006](http://localhost:8006) | [autoforge/README.md](./autoforge/README.md) |
+| 8 | [**SentinelOps**](./SentinelOps) ★ | SRE DevOps Incident Response | `8007` | [localhost:8007](http://localhost:8007) | [SentinelOps/README.md](./SentinelOps/README.md) |
 
 ---
 
@@ -99,172 +114,196 @@ graph TB
 
 ## 🗂️ Project Catalog
 
-### 1️⃣ EvalOps — LLM Regression Testing Platform
+### 1️⃣ [EvalOps](./EvalOps) — LLM Regression Testing Platform
 
 > **CI/CD for your prompts and AI agents.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./EvalOps`](./EvalOps) |
 | **Port** | `8000` |
 | **Core Skill** | Eval Discipline |
 | **Key Features** | Golden datasets, LLM-as-judge, pairwise comparison, regression detection, human feedback loop |
 | **Tech** | FastAPI, Ollama, SQLite, Chart.js, Watchdog |
-| **Lines** | 3,301 across 25 files |
+| **Code Volume** | 3,301 lines across 25 files |
 
-**What it does:** Run benchmark evaluations against any local LLM model. Score outputs with both deterministic scoring (Jaccard, exact match) and LLM-as-judge. Detect regressions automatically when prompt changes degrade quality. Review everything in a live dashboard.
+**What it does:** Run benchmark evaluations against any local LLM model. Score outputs with deterministic scoring (Jaccard, exact match) and LLM-as-judge. Detect regressions automatically when prompt changes degrade quality. Review everything in a live dashboard.
 
 ```bash
-cd EvalOps && pip install -r requirements.txt
+cd EvalOps
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 make seed && make run    # → http://localhost:8000/dashboard
 ```
 
 ---
 
-### 2️⃣ QueryForge — Multi-Tool Research Agent
+### 2️⃣ [QueryForge](./queryforge) — Multi-Tool Research Agent
 
 > **Ask a question, the agent picks the tools.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./queryforge`](./queryforge) |
 | **Port** | `8001` |
 | **Core Skill** | Tool Design |
 | **Key Features** | SQL query generation, web search, PDF summarization, chart rendering, tool selection reasoning |
 | **Tech** | Google ADK, FastAPI, Ollama, aiosqlite, matplotlib |
-| **Lines** | 3,821 across 34 files |
+| **Code Volume** | 3,821 lines across 34 files |
 
 **What it does:** Type a natural language question like *"Find our highest churn customer segment and compare it with industry trends."* The agent decides which tools to call (SQL, web search, PDF reader, API), executes them in the right order, and synthesizes a coherent answer.
 
 ```bash
-cd queryforge && pip install -e ".[dev]"
+cd queryforge
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 uvicorn src.api.main:app --port 8001 --reload  # → http://localhost:8001
 ```
 
 ---
 
-### 3️⃣ VentureMind — Startup Due Diligence Multi-Agent System
+### 3️⃣ [VentureMind](./VentureMind) — Startup Due Diligence Multi-Agent System
 
 > **5 specialist agents analyze a startup before investment.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./VentureMind`](./VentureMind) |
 | **Port** | `8002` |
 | **Core Skill** | Agent Orchestration |
 | **Key Features** | Parallel agent execution, market research, competitor analysis, financial modeling, legal review, report synthesis |
 | **Tech** | Google ADK, FastAPI, Ollama, aiosqlite |
-| **Lines** | 6,605 across 51 files |
+| **Code Volume** | 6,605 lines across 51 files |
 
 **What it does:** Provide a startup name and description. Five specialized agents (Market Research, Competitor Analysis, Financial Analysis, Legal Review, Summarization) run in parallel, share findings, and produce a comprehensive due diligence report.
 
 ```bash
-cd VentureMind && pip install -e ".[dev]"
+cd VentureMind
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 python scripts/seed_demo_samples.py
 uvicorn src.api.app:app --port 8002 --reload  # → http://localhost:8002
 ```
 
 ---
 
-### 4️⃣ CodeLensAI — Autonomous PR Review Agent
+### 4️⃣ [CodeLensAI](./CodeLensAI) — Autonomous PR Review Agent
 
 > **AI reviewer that knows what context matters.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./CodeLensAI`](./CodeLensAI) |
 | **Port** | `8003` |
 | **Core Skill** | Context Engineering |
 | **Key Features** | Code diff analysis, context compression, review scoring, security/performance flags, review history |
 | **Tech** | FastAPI, Ollama, SQLite |
-| **Lines** | 4,238 across 34 files |
+| **Code Volume** | 4,238 lines across 34 files |
 
 **What it does:** Paste a code diff or connect a repo. The agent analyzes changed files, retrieves relevant architecture docs and coding standards, compresses context to fit the model window, and produces a detailed code review with scores for correctness, security, and maintainability.
 
 ```bash
-cd CodeLensAI && pip install -e ".[dev]"
+cd CodeLensAI
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 python codelens/scripts/seed_demo_reviews.py
 uvicorn codelens.src.api.main:app --port 8003 --reload  # → http://localhost:8003
 ```
 
 ---
 
-### 5️⃣ Agent Learning Pilot — Can Agents Learn From Feedback?
+### 5️⃣ [Agent Learning Pilot](./agent-learning-pilot) — Can Agents Learn From Feedback?
 
 > **A controlled experiment measuring agent improvement over time.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./agent-learning-pilot`](./agent-learning-pilot) |
 | **Port** | `8004` |
 | **Core Skill** | Agent Learning & Evaluation |
 | **Key Features** | Controlled A/B experiments, retention curves, transfer learning analysis, cost-vs-capability tracking |
 | **Tech** | FastAPI, Ollama, pandas, matplotlib |
-| **Lines** | 4,759 across 189 files |
+| **Code Volume** | 4,759 lines across 189 files |
 
 **What it does:** Runs controlled experiments to measure whether coding agents genuinely improve when given structured feedback. Tracks retention (do improvements stick?), transfer (do improvements generalize?), and cost-effectiveness across experiment conditions.
 
 ```bash
-cd agent-learning-pilot && pip install -e ".[dev]"
+cd agent-learning-pilot
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 python scripts/serve_results.py 8004  # → http://localhost:8004
 ```
 
 ---
 
-### 6️⃣ FailSafe Agent — Resilient AI Support Agent
+### 6️⃣ [FailSafe Agent](./failsafe-agent) — Resilient AI Support Agent
 
 > **When the model fails, the system doesn't.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./failsafe-agent`](./failsafe-agent) |
 | **Port** | `8005` |
 | **Core Skill** | Reliability Engineering |
 | **Key Features** | Circuit breakers, fallback LLM chains, retry with exponential backoff, SHA-256 audit ledger, human escalation |
 | **Tech** | FastAPI, Ollama, SQLite, hashlib |
-| **Lines** | 5,317 across 54 files |
+| **Code Volume** | 5,317 lines across 54 files |
 
-**What it does:** A customer support agent that handles refund requests, policy lookups, and payment actions — but with production-grade resilience. If the primary LLM times out, a circuit breaker trips and falls back to a smaller model. Every action is logged in a cryptographic audit ledger with SHA-256 hash chaining.
+**What it does:** A customer support agent that handles refund requests, policy lookups, and payment actions — with production-grade resilience. If the primary LLM times out, a circuit breaker trips and falls back to a deterministic engine. Every action is recorded in a cryptographic SHA-256 audit ledger.
 
 ```bash
-cd failsafe-agent && pip install -e ".[dev]"
+cd failsafe-agent
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 uvicorn src.main:app --port 8005 --reload  # → http://localhost:8005
 ```
 
 ---
 
-### 7️⃣ AutoForge — Autonomous Software Engineering Sandbox
+### 7️⃣ [AutoForge](./autoforge) — Autonomous Software Engineering Sandbox
 
 > **Agent writes code, sandbox runs it, tests verify it.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./autoforge`](./autoforge) |
 | **Port** | `8006` |
 | **Core Skill** | Harness Engineering |
 | **Key Features** | Issue-to-PR pipeline, sandboxed code execution, test verification loops, artifact logging, rollback |
 | **Tech** | FastAPI, Ollama, SQLite, subprocess isolation |
-| **Lines** | 4,747 across 41 files |
+| **Code Volume** | 4,747 lines across 41 files |
 
-**What it does:** Feed it a GitHub issue description. The agent generates code, runs it in an isolated sandbox, validates outputs against tests, and produces a verified artifact. If tests fail, it iterates. The surrounding harness (sandboxing, verification, artifact logging) matters more than the model itself.
+**What it does:** Feed it an issue description. The agent generates code, executes it in an isolated sandbox, validates outputs against unit tests, and produces a verified artifact. If tests fail, it iterates autonomously.
 
 ```bash
-cd autoforge && pip install -e ".[dev]"
+cd autoforge
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 python scripts/seed_demo_tasks.py
 uvicorn src.main:app --port 8006 --reload  # → http://localhost:8006
 ```
 
 ---
 
-### 8️⃣ SentinelOps — AI DevOps Incident Response ★ Capstone
+### 8️⃣ [SentinelOps](./SentinelOps) — AI DevOps Incident Response ★ Capstone
 
 > **Everything from projects 1–7, combined into one production system.**
 
-| | |
+| Attribute | Specification |
 |---|---|
+| **Directory** | [`./SentinelOps`](./SentinelOps) |
 | **Port** | `8007` |
 | **Core Skill** | Full-Stack AI Systems Engineering |
 | **Key Features** | Multi-agent investigation, log analysis, metrics querying, runbook search, escalation logic, cryptographic audit ledger |
 | **Tech** | FastAPI, Ollama, SQLite, SHA-256 hash chaining |
-| **Lines** | 847 across 9 files |
+| **Code Volume** | 847 lines across 9 files |
 
-**What it does:** Detects infrastructure incidents, then orchestrates a multi-agent investigation: one agent triages severity, another pulls logs, another queries metrics, another searches runbooks. The orchestrator synthesizes findings into a resolution plan or escalates to a human. Every step is recorded in an immutable audit ledger.
+**What it does:** Detects infrastructure incidents, then orchestrates a multi-agent investigation: one agent triages severity, another pulls logs, another queries metrics, another searches runbooks. The orchestrator synthesizes findings into a remediation plan or escalates to a human SRE. Every event is saved in a tamper-evident audit ledger.
 
 ```bash
-cd SentinelOps && pip install -e ".[dev]"
+cd SentinelOps
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 python scripts/seed_incidents.py
 uvicorn src.main:app --port 8007 --reload  # → http://localhost:8007
 ```
@@ -275,80 +314,39 @@ uvicorn src.main:app --port 8007 --reload  # → http://localhost:8007
 
 ### Prerequisites
 
-| Requirement | Version | Purpose |
+| Requirement | Recommended Version | Purpose |
 |---|---|---|
-| **Python** | 3.11+ | Runtime |
-| **Ollama** | Latest | Local LLM inference |
-| **qwen2.5:7b** | — | Default model for all projects |
-
-### 1. Install Ollama & pull the model
+| **Python** | `3.11+` | Core execution environment |
+| **Ollama** | Latest | Local LLM inference server |
+| **Model** | `qwen2.5:7b` | Primary inference model |
 
 ```bash
-# Install Ollama (macOS)
-brew install ollama
-
-# Start Ollama service
+# 1. Install & start Ollama (macOS / Linux)
+brew install ollama  # or curl -fsSL https://ollama.com/install.sh | sh
 ollama serve
 
-# Pull the default model
+# 2. Pull the default reasoning model
 ollama pull qwen2.5:7b
 ```
 
-### 2. Clone & run any project
+### Clone and Run
 
 ```bash
 git clone https://github.com/simranjeet97/AndrejKarpathy_2026_FocusProjects.git
 cd AndrejKarpathy_2026_FocusProjects
-
-# Pick a project, e.g. EvalOps
-cd EvalOps
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt  # or: pip install -e ".[dev]"
-
-# Seed demo data (if available)
-make seed  # or: python scripts/seed_*.py
-
-# Start the server
-make run   # or: uvicorn ... --port 8000 --reload
 ```
 
-### 3. Open the dashboard
-
-Each project serves a web dashboard on its assigned port:
-
-| Project | URL |
-|---|---|
-| EvalOps | [http://localhost:8000/dashboard](http://localhost:8000/dashboard) |
-| QueryForge | [http://localhost:8001](http://localhost:8001) |
-| VentureMind | [http://localhost:8002](http://localhost:8002) |
-| CodeLensAI | [http://localhost:8003](http://localhost:8003) |
-| Agent Learning Pilot | [http://localhost:8004](http://localhost:8004) |
-| FailSafe Agent | [http://localhost:8005](http://localhost:8005) |
-| AutoForge | [http://localhost:8006](http://localhost:8006) |
-| SentinelOps | [http://localhost:8007](http://localhost:8007) |
+Choose any project folder from above, activate its virtual environment, seed its demo data, and start its Uvicorn dev server.
 
 ---
 
-## 🏗️ Tech Stack
+## 🎨 UI Design System
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                        │
-│   HTML + CSS + Chart.js   │   FastAPI Jinja2 Templates      │
-├─────────────────────────────────────────────────────────────┤
-│                       API Layer                             │
-│   FastAPI (async)   │   REST endpoints   │   CORS enabled   │
-├─────────────────────────────────────────────────────────────┤
-│                    Agent / Logic Layer                       │
-│   Google ADK   │   Custom Orchestrators   │   Tool Router    │
-├─────────────────────────────────────────────────────────────┤
-│                     LLM Inference                           │
-│   Ollama (local)   │   qwen2.5:7b   │   Fallback chains     │
-├─────────────────────────────────────────────────────────────┤
-│                      Storage Layer                          │
-│   SQLite (zero infra)   │   SHA-256 audit ledgers           │
-└─────────────────────────────────────────────────────────────┘
-```
+All 8 web applications share a standardized, accessible **high-density ops design system**:
+* **Canvas Background**: High-contrast, clean light theme (`#f8fafc`).
+* **Container Width**: Optimized 1560px grid layouts with responsive micro-cards.
+* **Component Palette**: Neutral slate (`#0f172a` text, `#e2e8f0` borders) paired with indigo accents (`#4f46e5`).
+* **Zero Ambiguity**: Instant status badges (`RESOLVED`, `ESCALATED`, `HEALTHY`), raw payload inspect modals, and one-click JSON exports.
 
 ---
 
@@ -402,8 +400,8 @@ AndrejKarpathy_2026_FocusProjects/
 │       ├── tools/              #   Log, metrics, runbook tools
 │       └── database.py         #   Audit ledger with hash chaining
 │
-├── .gitignore
-└── README.md                   # ← You are here
+├── .gitignore                  # Comprehensive gitignore (venv, caches, dbs)
+└── README.md                   # ← Comprehensive Project Suite Documentation
 ```
 
 ---
@@ -420,7 +418,7 @@ graph LR
     F --> G["7. AutoForge<br/>Harness Engineering"]
     G --> H["8. SentinelOps ★<br/>Everything Combined"]
 
-    style H fill:#f59e0b,stroke:#d97706,color:#000
+    style H fill:#4f46e5,stroke:#4338ca,color:#fff
 ```
 
 Each project builds on skills from the previous ones. By the time you reach SentinelOps, you've practiced every production AI engineering pattern.
@@ -451,4 +449,3 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 — Andrej Karpathy
 
 </div>
-]]>
