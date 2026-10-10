@@ -263,3 +263,39 @@ class SQLiteStorage:
                     run_id=row["run_id"]
                 )
             return None
+
+    def get_feedback(self, run_id: Optional[str] = None, task_id: Optional[str] = None) -> List[HumanFeedback]:
+        """Retrieve human feedback entries, optionally filtered by run_id or task_id."""
+        query = "SELECT * FROM human_feedback WHERE 1=1"
+        params = []
+        if run_id:
+            query += " AND run_id = ?"
+            params.append(run_id)
+        if task_id:
+            query += " AND task_id = ?"
+            params.append(task_id)
+        query += " ORDER BY submitted_at DESC"
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            return [
+                HumanFeedback(
+                    id=row["id"],
+                    run_id=row["run_id"],
+                    task_id=row["task_id"],
+                    rating=row["rating"],
+                    notes=row["notes"],
+                    submitted_at=row["submitted_at"]
+                ) for row in rows
+            ]
+
+    def clear_runs(self) -> None:
+        """Deletes all eval runs, regressions, and feedback records."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM eval_runs")
+            cursor.execute("DELETE FROM regressions")
+            cursor.execute("DELETE FROM human_feedback")
+            conn.commit()

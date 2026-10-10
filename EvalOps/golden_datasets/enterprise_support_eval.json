@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ent-001",
+    "name": "SLA Response Policy",
+    "input_prompt": "What is our guaranteed response SLA for Severity 1 production outages on enterprise tier?",
+    "expected_output": "Our enterprise tier guarantees a response time of within 15 minutes for Severity 1 production outages.",
+    "tags": [
+      "sla",
+      "enterprise",
+      "support"
+    ]
+  },
+  {
+    "id": "ent-002",
+    "name": "JSON Strict Format",
+    "input_prompt": "Return a JSON object with key error as false and tier as enterprise. Output only valid JSON.",
+    "expected_output": "{\"error\": false, \"tier\": \"enterprise\"}",
+    "tags": [
+      "json",
+      "formatting"
+    ]
+  }
+]

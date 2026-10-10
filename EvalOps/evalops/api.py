@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,11 +82,22 @@ class RunTrigger(BaseModel):
     model: str
     run_id: Optional[str] = None
 
+class DatasetCreate(BaseModel):
+    name: str
+    tasks: List[Dict[str, Any]]
+
 class FeedbackCreate(BaseModel):
     run_id: str
     task_id: str
     rating: int = Field(..., ge=1, le=5)
     notes: str = ""
+
+class FeedbackReEvaluate(BaseModel):
+    run_id: str
+    task_id: str
+    rating: int = Field(..., ge=1, le=5)
+    notes: str = ""
+    model: Optional[str] = None
 
 # Background evaluation task
 async def run_evaluation_flow(
@@ -168,7 +180,61 @@ async def create_task(
     storage.save_task(new_task)
     return new_task.to_dict()
 
+@app.get("/datasets")
+async def list_datasets() -> List[Dict[str, Any]]:
+    from pathlib import Path
+    import json
+    datasets_dir = Path("golden_datasets")
+    datasets_dir.mkdir(parents=True, exist_ok=True)
+    results = []
+    for f in sorted(datasets_dir.glob("*.json")):
+        try:
+            with open(f, "r") as fp:
+                data = json.load(fp)
+            count = len(data) if isinstance(data, list) else 0
+        except Exception:
+            count = 0
+        results.append({
+            "name": f.stem,
+            "filename": f.name,
+            "path": f"golden_datasets/{f.name}",
+            "task_count": count
+        })
+    return results
+
+@app.post("/datasets")
+async def create_dataset(
+    payload: DatasetCreate,
+    storage: SQLiteStorage = Depends(get_storage)
+) -> Dict[str, Any]:
+    from pathlib import Path
+    import json
+    datasets_dir = Path("golden_datasets")
+    datasets_dir.mkdir(parents=True, exist_ok=True)
+    clean_name = payload.name.strip().lower().replace(" ", "_")
+    fname = f"{clean_name}.json" if not clean_name.endswith(".json") else clean_name
+    target_file = datasets_dir / fname
+    
+    with open(target_file, "w") as fp:
+        json.dump(payload.tasks, fp, indent=2)
+
+    # Also register tasks into SQLite
+    for t_dict in payload.tasks:
+        try:
+            task = EvalTask.from_dict(t_dict)
+            storage.save_task(task)
+        except Exception:
+            pass
+
+    return {
+        "status": "created",
+        "filename": fname,
+        "path": f"golden_datasets/{fname}",
+        "task_count": len(payload.tasks)
+    }
+
 @app.post("/run")
+
 async def trigger_run(
     payload: RunTrigger,
     background_tasks: BackgroundTasks,
@@ -204,7 +270,29 @@ async def get_run_report(
         
     report = engine.generate_report(run_id)
     metrics_report = metrics.full_report(run_id, runs)
-    return {**report, **metrics_report, "runs": [r.to_dict() for r in runs]}
+
+    # Enrich each run with task details (input_prompt, expected_output)
+    tasks = storage.get_tasks()
+    task_map = {t.id: t for t in tasks}
+    enriched_runs = []
+    for run in runs:
+        rd = run.to_dict()
+        task = task_map.get(run.task_id)
+        if task:
+            rd["task_name"] = task.name
+            rd["input_prompt"] = task.input_prompt
+            rd["expected_output"] = task.expected_output
+            rd["tags"] = task.tags
+        enriched_runs.append(rd)
+
+    # Include feedback data for this run
+    feedbacks = storage.get_feedback(run_id=run_id)
+    fb_map = {}
+    for fb in feedbacks:
+        if fb.task_id not in fb_map:
+            fb_map[fb.task_id] = fb.to_dict()
+
+    return {**report, **metrics_report, "runs": enriched_runs, "feedback": fb_map}
 
 @app.get("/runs/{run_id}/regressions")
 async def get_run_regressions(
@@ -266,6 +354,106 @@ async def submit_feedback(
     storage.save_feedback(new_feedback)
     return new_feedback.to_dict()
 
+@app.get("/feedback/{run_id}")
+async def get_feedback(
+    run_id: str,
+    storage: SQLiteStorage = Depends(get_storage)
+) -> List[Dict[str, Any]]:
+    feedbacks = storage.get_feedback(run_id=run_id)
+    return [f.to_dict() for f in feedbacks]
+
+@app.post("/feedback/re-evaluate")
+async def re_evaluate_with_feedback(
+    payload: FeedbackReEvaluate,
+    storage: SQLiteStorage = Depends(get_storage),
+    judge: LLMJudge = Depends(get_judge)
+) -> Dict[str, Any]:
+    """
+    Active Alignment (RLHF) loop:
+    Takes human feedback (rating + critique notes), injects it as alignment conditioning,
+    re-runs the LLM on this exact task, re-evaluates with LLM Judge, and measures score delta.
+    """
+    tasks = storage.get_tasks()
+    task = next((t for t in tasks if t.id == payload.task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    runs = storage.get_runs(run_id=payload.run_id, task_id=payload.task_id)
+    prev_run = runs[0] if runs else None
+    prev_score = prev_run.score if prev_run else 0.0
+    prev_output = prev_run.output if prev_run else ""
+
+    # Save human feedback
+    fb = HumanFeedback(
+        run_id=payload.run_id,
+        task_id=payload.task_id,
+        rating=payload.rating,
+        notes=payload.notes
+    )
+    storage.save_feedback(fb)
+
+    # Condition model on human feedback
+    model_name = payload.model or (prev_run.model if prev_run else "qwen2.5:7b")
+    feedback_guidance = (
+        f"You are refining an AI response to strictly align with human evaluator feedback.\n"
+        f"Human Rating: {payload.rating}/5 stars.\n"
+        f"Evaluator Critique / Guidance: '{payload.notes or 'Improve response clarity and accuracy according to expected standards.'}'.\n"
+        f"Expected Reference Output: '{task.expected_output}'.\n"
+        f"Generate an improved, high-quality response that directly satisfies the evaluator's critique."
+    )
+
+    client = OllamaClient()
+    start_time = time.monotonic()
+    try:
+        resp = await client.generate(
+            model=model_name,
+            prompt=task.input_prompt,
+            system_prompt=feedback_guidance
+        )
+        new_output = resp["text"]
+        tokens_used = resp.get("tokens_used", 0)
+        latency_ms = (time.monotonic() - start_time) * 1000.0
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
+
+    # Re-evaluate with LLM Judge
+    temp_run = EvalRun(
+        id=prev_run.id if prev_run else str(uuid.uuid4()),
+        task_id=task.id,
+        model=model_name,
+        output=new_output,
+        score=0.0,
+        latency_ms=latency_ms,
+        tokens_used=tokens_used,
+        run_id=payload.run_id
+    )
+    score_res = await judge.score(task, temp_run)
+    new_score = score_res.get("score", 0.0)
+    temp_run.score = new_score
+
+    # Save updated run in storage
+    storage.save_run(temp_run)
+
+    score_delta = round(new_score - prev_score, 3)
+    improved = new_score > prev_score
+
+    return {
+        "task_id": payload.task_id,
+        "run_id": payload.run_id,
+        "model": model_name,
+        "feedback_rating": payload.rating,
+        "feedback_notes": payload.notes,
+        "original_score": prev_score,
+        "original_output": prev_output,
+        "refined_score": new_score,
+        "refined_output": new_output,
+        "score_delta": score_delta,
+        "improved": improved,
+        "judge_reason": score_res.get("reason", ""),
+        "latency_ms": latency_ms,
+        "tokens_used": tokens_used
+    }
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard(
     request: Request,
@@ -286,6 +474,15 @@ async def serve_dashboard(
 async def list_unique_runs(storage: SQLiteStorage = Depends(get_storage)) -> List[str]:
     all_runs = storage.get_runs()
     return list(set(r.run_id for r in all_runs))
+
+@app.delete("/runs")
+async def clear_all_runs(storage: SQLiteStorage = Depends(get_storage)) -> Dict[str, str]:
+    from pathlib import Path
+    storage.clear_runs()
+    latest_file = Path("results/latest.json")
+    if latest_file.exists():
+        latest_file.write_text("[]", encoding="utf-8")
+    return {"status": "cleared", "message": "All historical runs removed"}
 
 @app.get("/report/{run_id}")
 async def download_report(

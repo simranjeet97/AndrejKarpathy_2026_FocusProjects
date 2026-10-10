@@ -3,280 +3,938 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EvalOps — LLM Evaluation Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>EvalOps — Explainable LLM Evaluation Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #0e1117; --surface: #161b22; --border: #30363d;
+      --bg: #0e1117; --surface: #161b22; --surface2: #1c2129; --border: #30363d;
       --text: #e6edf3; --muted: #8b949e; --dim: #484f58;
       --accent: #58a6ff; --green: #3fb950; --red: #f85149;
-      --amber: #d29922; --purple: #bc8cff; --radius: 10px;
+      --amber: #d29922; --purple: #bc8cff; --cyan: #39d2c0;
+      --radius: 10px; --radius-sm: 6px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
 
     /* Header */
-    .header { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 10; }
-    .header h1 { font-size: 18px; font-weight: 700; }
-    .header h1 span { color: var(--accent); }
-    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header { padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 50; }
+    .header h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .header h1 .logo { color: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 10px; }
 
     /* Buttons */
-    .btn { padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn { padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
     .btn:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-primary:hover { background: #4c9aed; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #0e1117; border-color: var(--accent); font-weight: 600; }
+    .btn-primary:hover { background: #79b8ff; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
     select.btn { appearance: auto; }
 
+    /* Form inputs */
+    input.form-input, textarea.form-input {
+      width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-family: inherit; font-size: 13px; outline: none; transition: border-color 0.15s;
+    }
+    input.form-input:focus, textarea.form-input:focus { border-color: var(--accent); }
+
     /* Layout */
-    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+
+    /* Controls Bar */
+    .controls-bar {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    }
+    .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .controls-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+    /* ===== PIPELINE VISUALIZATION ===== */
+    .pipeline-bar {
+      display: flex; align-items: center; gap: 0; margin-bottom: 20px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; overflow-x: auto;
+    }
+    .pipeline-step {
+      display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 8px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border); min-width: 180px; transition: all 0.3s;
+    }
+    .pipeline-step.active { border-color: var(--accent); background: rgba(88,166,255,0.08); }
+    .pipeline-step.done { border-color: var(--green); background: rgba(63,185,80,0.06); }
+    .pipeline-step .step-icon {
+      width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;
+      background: rgba(255,255,255,0.05); flex-shrink: 0;
+    }
+    .pipeline-step.done .step-icon { background: rgba(63,185,80,0.15); }
+    .pipeline-step.active .step-icon { background: rgba(88,166,255,0.15); }
+    .pipeline-step .step-info { flex: 1; }
+    .pipeline-step .step-label { font-size: 12px; font-weight: 600; }
+    .pipeline-step .step-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .pipeline-arrow { color: var(--dim); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
 
     /* Stats Row */
-    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
-    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
-    .stat-value { font-size: 24px; font-weight: 700; }
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 
-    /* Controls */
-    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
-    .controls label { font-size: 13px; color: var(--muted); }
-
-    /* Grid layout */
-    .grid-2 { display: grid; grid-template-columns: 5fr 3fr; gap: 20px; }
+    /* Charts area */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 
     /* Cards */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
-    .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+    .card-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 0; }
+    .chart-wrap { padding: 16px; height: 260px; position: relative; }
 
-    /* Table */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 10px 14px; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
-    td { padding: 10px 14px; border-bottom: 1px solid rgba(48,54,61,0.5); }
-    tbody tr:hover { background: rgba(88,166,255,0.04); }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    /* ===== TASK RESULTS TABLE ===== */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(48,54,61,0.4); vertical-align: top; }
+    tbody tr.task-row { cursor: pointer; transition: background 0.15s; }
+    tbody tr.task-row:hover { background: rgba(88,166,255,0.04); }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
     .badge-pass { background: rgba(63,185,80,0.15); color: var(--green); }
     .badge-warn { background: rgba(210,153,34,0.15); color: var(--amber); }
     .badge-fail { background: rgba(248,81,73,0.15); color: var(--red); }
 
-    /* Chart */
-    .chart-wrap { padding: 18px; height: 280px; position: relative; }
+    /* ===== EXPANDABLE DETAIL ROW ===== */
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+    .detail-row td { padding: 0; background: var(--bg); }
 
-    /* Regressions */
-    .reg-item { padding: 12px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-    .reg-item:hover { background: rgba(248,81,73,0.04); }
-    .reg-item:last-child { border-bottom: none; }
-    .reg-detail { display: none; padding: 8px 18px 14px; font-size: 12px; color: var(--muted); line-height: 1.6; }
-    .reg-detail.open { display: block; }
-
-    /* Feedback */
-    .fb-item { padding: 14px 18px; border-bottom: 1px solid var(--border); }
-    .fb-item:last-child { border-bottom: none; }
-    .stars { display: flex; gap: 4px; margin: 6px 0; }
-    .star { font-size: 20px; cursor: pointer; color: var(--dim); transition: color 0.1s; }
-    .star.on { color: #d29922; }
-    textarea { width: 100%; height: 48px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-family: inherit; font-size: 12px; resize: vertical; outline: none; }
-    textarea:focus { border-color: var(--accent); }
-
-    .empty { padding: 30px; text-align: center; color: var(--dim); font-size: 13px; }
-
-    @media (max-width: 900px) {
-      .stats-row { grid-template-columns: repeat(2, 1fr); }
-      .grid-2 { grid-template-columns: 1fr; }
+    .detail-pane {
+      padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+      border-left: 3px solid var(--accent);
     }
+    .detail-section {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; min-width: 0;
+    }
+    .detail-section h4 {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .detail-section h4 .dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
+    .detail-section pre {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-word; color: var(--text);
+      max-height: 200px; overflow-y: auto; background: var(--bg); border-radius: 4px; padding: 10px;
+    }
+    .detail-section .output-text {
+      font-size: 12px; line-height: 1.6; color: var(--text); max-height: 200px; overflow-y: auto;
+    }
+
+    /* Score gauge mini */
+    .score-gauge { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .score-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
+    /* ===== FEEDBACK SECTION ===== */
+    .feedback-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .stars { display: flex; gap: 3px; }
+    .star { font-size: 18px; cursor: pointer; color: var(--dim); transition: color 0.1s; user-select: none; }
+    .star.on { color: var(--amber); }
+    textarea.fb-notes { width: 100%; height: 40px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: inherit; font-size: 11px; resize: vertical; outline: none; margin-top: 6px; }
+    textarea.fb-notes:focus { border-color: var(--accent); }
+
+    /* Feedback delta display */
+    .fb-delta { margin-top: 10px; padding: 10px; background: rgba(188,140,255,0.06); border: 1px solid rgba(188,140,255,0.2); border-radius: var(--radius-sm); }
+    .fb-delta h5 { font-size: 11px; color: var(--purple); margin-bottom: 6px; font-weight: 600; }
+    .delta-row { display: flex; align-items: center; gap: 8px; font-size: 11px; margin-bottom: 4px; }
+    .delta-row .label { color: var(--muted); min-width: 100px; }
+    .delta-arrow { font-weight: 700; }
+    .delta-arrow.up { color: var(--green); }
+    .delta-arrow.down { color: var(--red); }
+
+    /* Empty state */
+    .empty { padding: 28px; text-align: center; color: var(--dim); font-size: 12px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      width: 90%; max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+    .modal-close:hover { color: #fff; }
+
+    /* Toast notifications */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 18px; font-size: 13px; z-index: 200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Responsive */
+    @media (max-width: 1100px) { .stats-row { grid-template-columns: repeat(3, 1fr); } .charts-row { grid-template-columns: 1fr; } .detail-pane { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } .pipeline-bar { flex-direction: column; } .pipeline-arrow { transform: rotate(90deg); } }
   </style>
 </head>
 <body>
+  <!-- Header -->
   <div class="header">
-    <h1><span>EvalOps</span> — LLM Regression Testing</h1>
+    <h1><span class="logo">⬡ EvalOps</span> — Explainable LLM Evaluation</h1>
     <div class="header-right">
+      <span class="badge badge-pass" style="font-size:11px; padding: 3px 10px;">● Ollama Online</span>
+      <button class="btn" id="btnOpenNewDataset">＋ New Dataset</button>
       <button class="btn btn-primary" id="btnRunEval">▶ Run Evaluation</button>
     </div>
   </div>
 
   <div class="container">
-    <!-- Controls -->
-    <div class="controls">
-      <label>Evaluation Run:</label>
-      <select class="btn" id="runSelect"><option value="">-- No Runs --</option></select>
-      <button class="btn" id="btnLoadRun">Load Run</button>
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="controls-group">
+        <label>Dataset:</label>
+        <select class="btn" id="datasetSelect"><option value="golden_datasets/example_dataset.json">example_dataset.json</option></select>
+        <label style="margin-left: 6px;">Model:</label>
+        <select class="btn" id="modelSelect"><option value="qwen2.5:7b">qwen2.5:7b</option></select>
+      </div>
+      <div class="controls-group">
+        <label>Run:</label>
+        <select class="btn" id="runSelect"><option value="">-- No Runs --</option></select>
+        <button class="btn btn-sm" id="btnLoadRun" onclick="loadActive()">Load</button>
+        <button class="btn btn-sm" id="btnClearRuns" onclick="clearRuns()" style="color:var(--red);">🗑 Clear All</button>
+      </div>
     </div>
 
-    <!-- Stats -->
+    <!-- ===== PIPELINE VISUALIZATION ===== -->
+    <div class="pipeline-bar" id="pipelineBar">
+      <div class="pipeline-step" id="pStep1">
+        <div class="step-icon">📋</div>
+        <div class="step-info"><div class="step-label">1. Golden Dataset</div><div class="step-desc">Input prompts & expected outputs</div></div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step" id="pStep2">
+        <div class="step-icon">🤖</div>
+        <div class="step-info"><div class="step-label">2. Model Inference</div><div class="step-desc">Ollama generates responses</div></div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step" id="pStep3">
+        <div class="step-icon">⚖️</div>
+        <div class="step-info"><div class="step-label">3. LLM Judge</div><div class="step-desc">Scores accuracy & hallucination</div></div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step" id="pStep4">
+        <div class="step-icon">📊</div>
+        <div class="step-info"><div class="step-label">4. Regression Check</div><div class="step-desc">Compares against baseline</div></div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step" id="pStep5">
+        <div class="step-icon">👤</div>
+        <div class="step-info"><div class="step-label">5. Human Feedback</div><div class="step-desc">RLHF star ratings & notes</div></div>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="vTasks">—</div></div>
+      <div class="stat-card"><div class="stat-label">Tasks Evaluated</div><div class="stat-value" id="vTasks">—</div></div>
       <div class="stat-card"><div class="stat-label">Pass Rate</div><div class="stat-value" id="vPass">—</div></div>
       <div class="stat-card"><div class="stat-label">Avg Score</div><div class="stat-value" id="vScore">—</div></div>
       <div class="stat-card"><div class="stat-label">Avg Latency</div><div class="stat-value" id="vLatency">—</div></div>
       <div class="stat-card"><div class="stat-label">Regressions</div><div class="stat-value" id="vRegs" style="color:var(--red)">—</div></div>
     </div>
 
-    <div class="grid-2">
-      <!-- Left Column -->
-      <div>
-        <!-- Results Table -->
-        <div class="card">
-          <div class="card-head">Evaluation Results</div>
-          <div style="overflow-x:auto;">
-            <table>
-              <thead><tr><th>Task</th><th>Model</th><th>Score</th><th>Latency</th><th>Tokens</th><th>Status</th></tr></thead>
-              <tbody id="tBody"><tr><td colspan="6" class="empty">Select a run to view results</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Score Chart -->
-        <div class="card">
-          <div class="card-head">Score Comparison Chart</div>
-          <div class="chart-wrap"><canvas id="scoreChart"></canvas></div>
-        </div>
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-head">Score Distribution by Task</div>
+        <div class="chart-wrap"><canvas id="scoreChart"></canvas></div>
       </div>
+      <div class="card">
+        <div class="card-head">Latency & Token Usage</div>
+        <div class="chart-wrap"><canvas id="latencyChart"></canvas></div>
+      </div>
+    </div>
 
-      <!-- Right Column -->
+    <!-- ===== EXPLAINABLE RESULTS TABLE ===== -->
+    <div class="card">
+      <div class="card-head">
+        <span>📝 Task-Level Results — Click any row to see the full pipeline</span>
+        <span id="runSubhead" style="font-size: 10px; font-weight: normal; color: var(--muted);"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px;"></th>
+              <th>Task Name</th>
+              <th>Input Prompt</th>
+              <th>Score</th>
+              <th>Latency</th>
+              <th>Tokens</th>
+              <th>Status</th>
+              <th>Feedback</th>
+            </tr>
+          </thead>
+          <tbody id="tBody">
+            <tr><td colspan="8" class="empty">Select a dataset and run an evaluation to see explainable results</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Regressions Panel -->
+    <div class="card" id="regCard">
+      <div class="card-head" style="color:var(--red)">⚠ Detected Regressions</div>
+      <div id="regPanel"><div class="empty">✓ No regressions detected</div></div>
+    </div>
+  </div>
+
+  <!-- Modal: Create New Dataset -->
+  <div class="modal-overlay" id="datasetModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="font-size: 15px; font-weight: 600;">Create Golden Dataset</h3>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
+      </div>
       <div>
-        <!-- Regressions -->
-        <div class="card">
-          <div class="card-head" style="color:var(--red)">⚠ Detected Regressions</div>
-          <div id="regPanel"><div class="empty">No regressions found</div></div>
-        </div>
-
-        <!-- Human Feedback -->
-        <div class="card">
-          <div class="card-head">Human Feedback Audit</div>
-          <div id="fbPanel"><div class="empty">Load a run to submit ratings</div></div>
-        </div>
+        <label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px;">Dataset Name:</label>
+        <input type="text" class="form-input" id="dsName" placeholder="my_custom_eval" value="custom_eval">
+      </div>
+      <div>
+        <label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px;">Tasks JSON Array:</label>
+        <textarea class="form-input" id="dsJson" style="height: 200px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.4;">[
+  {
+    "id": "custom-001",
+    "name": "Customer Greeting & Policy",
+    "input_prompt": "A customer asks: What is your refund policy for annual plans?",
+    "expected_output": "Our refund policy allows full refunds within 30 days of initial purchase.",
+    "tags": ["support", "policy"]
+  },
+  {
+    "id": "custom-002",
+    "name": "Format Validation - JSON Only",
+    "input_prompt": "Output a valid JSON object with keys 'status' (string 'success') and 'code' (integer 200). Output nothing else.",
+    "expected_output": "{\"status\": \"success\", \"code\": 200}",
+    "tags": ["constraints", "json"]
+  }
+]</textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+        <button class="btn" id="btnCancelModal">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveDataset">Save & Select</button>
       </div>
     </div>
   </div>
 
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
   <script>
-    let taskMap = {}, chart = null;
+    // ===== STATE =====
+    let taskMap = {}, taskDetailMap = {}, chart1 = null, chart2 = null;
+    let currentReport = null, currentFeedback = {};
+    let clearConfirmTimeout = null;
+
+    // ===== INIT =====
+    function bindEvents() {
+      const loadBtn = document.getElementById('btnLoadRun');
+      if (loadBtn) loadBtn.onclick = loadActive;
+      const runBtn = document.getElementById('btnRunEval');
+      if (runBtn) runBtn.onclick = triggerRun;
+      const newDsBtn = document.getElementById('btnOpenNewDataset');
+      if (newDsBtn) newDsBtn.onclick = () => document.getElementById('datasetModal').classList.add('active');
+      const closeMBtn = document.getElementById('btnCloseModal');
+      if (closeMBtn) closeMBtn.onclick = () => document.getElementById('datasetModal').classList.remove('active');
+      const cancelMBtn = document.getElementById('btnCancelModal');
+      if (cancelMBtn) cancelMBtn.onclick = () => document.getElementById('datasetModal').classList.remove('active');
+      const saveDsBtn = document.getElementById('btnSaveDataset');
+      if (saveDsBtn) saveDsBtn.onclick = saveNewDataset;
+      const clearBtn = document.getElementById('btnClearRuns');
+      if (clearBtn) clearBtn.onclick = clearRuns;
+    }
+
+    // Bind events immediately, don't wait for network calls
+    bindEvents();
 
     document.addEventListener('DOMContentLoaded', async () => {
+      bindEvents();
+      await loadDatasets();
       await loadTasks();
       await loadRuns();
-      document.getElementById('btnLoadRun').addEventListener('click', loadActive);
-      document.getElementById('btnRunEval').addEventListener('click', triggerRun);
     });
 
+    // ===== TOAST =====
+    function showToast(msg, duration = 3000) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    // ===== PIPELINE STEPS =====
+    function setPipelineState(step) {
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById('pStep' + i);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (i < step) el.classList.add('done');
+        else if (i === step) el.classList.add('active');
+      }
+    }
+
+    // ===== DATA LOADING =====
+    async function loadDatasets() {
+      try {
+        const r = await fetch('/datasets');
+        if (r.ok) {
+          const list = await r.json();
+          const sel = document.getElementById('datasetSelect');
+          if (list.length > 0) sel.innerHTML = list.map(d => `<option value="${d.path}">${d.filename} (${d.task_count} tasks)</option>`).join('');
+        }
+      } catch (e) { console.error('Failed to load datasets:', e); }
+    }
+
     async function loadTasks() {
-      try { const r = await fetch('/tasks'); (await r.json()).forEach(t => taskMap[t.id] = t.name); } catch(e) {}
+      try {
+        const r = await fetch('/tasks');
+        const tasks = await r.json();
+        tasks.forEach(t => {
+          taskMap[t.id] = t.name;
+          taskDetailMap[t.id] = t;
+        });
+      } catch(e) {}
     }
 
     async function loadRuns() {
       try {
-        const r = await fetch('/runs'), ids = await r.json();
+        const r = await fetch('/runs');
+        const ids = await r.json();
         const sel = document.getElementById('runSelect');
-        sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}">Run: ${id.substring(0,8)}…</option>`).join('') : '<option value="">-- No Runs --</option>';
-      } catch(e) {}
+        if (ids.length) {
+          sel.innerHTML = ids.map(id => `<option value="${id}">Run: ${id.substring(0,8)}…</option>`).join('');
+          if (!currentReport) loadActive();
+        } else {
+          sel.innerHTML = '<option value="">-- No Runs --</option>';
+        }
+      } catch(e) {
+        console.error('Failed to load runs:', e);
+      }
     }
 
-    async function triggerRun() {
-      const model = prompt('Model name to evaluate:', 'qwen2.5:7b');
-      if (!model) return;
+    async function clearRuns() {
+      const btn = document.getElementById('btnClearRuns');
+      if (!btn) return;
+
+      // 2-step inline confirmation (bypasses browser popup blocking)
+      if (btn.dataset.confirming !== 'true') {
+        btn.dataset.confirming = 'true';
+        btn.innerHTML = '⚠️ Click to Confirm';
+        btn.style.background = 'rgba(248,81,73,0.2)';
+        btn.style.borderColor = 'var(--red)';
+        btn.style.color = '#fff';
+        showToast('Click again to delete all historical evaluation runs', 4000);
+        clearTimeout(clearConfirmTimeout);
+        clearConfirmTimeout = setTimeout(() => {
+          btn.dataset.confirming = 'false';
+          btn.innerHTML = '🗑 Clear All';
+          btn.style.background = '';
+          btn.style.borderColor = '';
+          btn.style.color = 'var(--red)';
+        }, 4000);
+        return;
+      }
+
+      // Executing clear
+      clearTimeout(clearConfirmTimeout);
+      btn.dataset.confirming = 'false';
+      btn.innerHTML = '⏳ Clearing...';
+      btn.disabled = true;
+
       try {
-        const r = await fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({dataset_path:'golden_datasets/example_dataset.json', model}) });
-        const d = await r.json();
-        alert('Run started! ID: ' + d.run_id);
-        setTimeout(loadRuns, 2000);
-      } catch(e) { alert('Failed: ' + e); }
+        const r = await fetch('/runs', { method: 'DELETE' });
+        if (r.ok) {
+          showToast('✓ All historical runs deleted successfully');
+          currentReport = null;
+          currentFeedback = {};
+          resetView();
+          await loadRuns();
+        } else {
+          const errText = await r.text();
+          showToast('Failed to clear runs: ' + errText);
+        }
+      } catch(e) {
+        showToast('Network error: ' + e);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🗑 Clear All';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = 'var(--red)';
+      }
     }
 
+    function resetView() {
+      currentReport = null;
+      currentFeedback = {};
+      ['vTasks','vPass','vScore','vLatency','vRegs'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+      const sub = document.getElementById('runSubhead');
+      if (sub) sub.textContent = '';
+      const tb = document.getElementById('tBody');
+      if (tb) tb.innerHTML = '<tr><td colspan="8" class="empty">Select a dataset and run an evaluation to see explainable results</td></tr>';
+      const rp = document.getElementById('regPanel');
+      if (rp) rp.innerHTML = '<div class="empty">✓ No regressions detected</div>';
+      const sel = document.getElementById('runSelect');
+      if (sel) sel.innerHTML = '<option value="">-- No Runs --</option>';
+
+      if (chart1) { chart1.destroy(); chart1 = null; }
+      if (chart2) { chart2.destroy(); chart2 = null; }
+
+      const c1 = document.getElementById('scoreChart');
+      if (c1) { const ctx = c1.getContext('2d'); ctx.clearRect(0, 0, c1.width, c1.height); }
+      const c2 = document.getElementById('latencyChart');
+      if (c2) { const ctx = c2.getContext('2d'); ctx.clearRect(0, 0, c2.width, c2.height); }
+
+      setPipelineState(0);
+    }
+
+    // ===== TRIGGER RUN =====
+    async function triggerRun() {
+      const datasetPath = document.getElementById('datasetSelect').value;
+      const model = document.getElementById('modelSelect').value;
+      const btn = document.getElementById('btnRunEval');
+      btn.disabled = true; btn.innerHTML = '⏳ Running...';
+
+      setPipelineState(1); // Dataset loaded
+      showToast('Starting evaluation pipeline...');
+
+      try {
+        const r = await fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ dataset_path: datasetPath, model }) });
+        const d = await r.json();
+        showToast(`Run ${d.run_id.substring(0,8)} started — Model inference in progress...`);
+        setPipelineState(2); // Inference
+
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          try {
+            const check = await fetch(`/runs/${d.run_id}`);
+            if (check.ok) {
+              const res = await check.json();
+              if (res.runs && res.runs.length > 0) {
+                clearInterval(poll);
+                btn.disabled = false; btn.innerHTML = '▶ Run Evaluation';
+                await loadRuns();
+                document.getElementById('runSelect').value = d.run_id;
+                currentReport = res;
+                currentFeedback = res.feedback || {};
+                setPipelineState(5); // Complete
+                renderReport(res);
+                showToast(`✓ Evaluation complete — ${res.runs.length} tasks scored`);
+                return;
+              }
+            }
+          } catch(e) {}
+          // Update pipeline progress
+          if (attempts === 2) setPipelineState(3); // Judging
+          if (attempts === 5) setPipelineState(4); // Regression
+          if (attempts > 45) { clearInterval(poll); btn.disabled = false; btn.innerHTML = '▶ Run Evaluation'; loadRuns(); }
+        }, 4000);
+      } catch(e) {
+        showToast('Failed: ' + e);
+        btn.disabled = false; btn.innerHTML = '▶ Run Evaluation';
+      }
+    }
+
+    // ===== LOAD EXISTING RUN =====
     async function loadActive() {
       const runId = document.getElementById('runSelect').value;
-      if (!runId) return alert('Select a run first');
+      if (!runId) return;
       try {
         const [rpt, regs] = await Promise.all([
           fetch(`/runs/${runId}`).then(r => r.json()),
           fetch(`/runs/${runId}/regressions`).then(r => r.json())
         ]);
-        renderStats(rpt);
-        renderTable(rpt.runs || [], regs);
-        renderRegs(regs);
-        renderFeedback(rpt.runs || [], runId);
-        renderChart(rpt.runs || []);
-      } catch(e) { alert('Error: ' + e); }
+        currentReport = rpt;
+        currentFeedback = rpt.feedback || {};
+        setPipelineState(5);
+        renderReport(rpt, regs);
+      } catch(e) { console.error('Error loading run', e); }
     }
 
-    function renderStats(r) {
-      document.getElementById('vTasks').textContent = r.total_tasks ?? '—';
-      document.getElementById('vPass').textContent = r.pass_rate != null ? Math.round(r.pass_rate * 100) + '%' : '—';
-      document.getElementById('vScore').textContent = r.avg_score != null ? r.avg_score.toFixed(2) : '—';
-      document.getElementById('vLatency').textContent = r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) + 'ms' : '—';
-      document.getElementById('vRegs').textContent = r.regressions ?? '0';
+    // ===== RENDER REPORT =====
+    function renderReport(r, regs) {
+      const runs = r.runs || [];
+      const totalTasks = r.total_tasks || runs.length;
+
+      // Stats
+      document.getElementById('vTasks').textContent = totalTasks;
+      document.getElementById('vPass').textContent = ((r.pass_rate || 0) * 100).toFixed(0) + '%';
+      document.getElementById('vScore').textContent = ((r.avg_score || 0) * 100).toFixed(0) + '%';
+      document.getElementById('vLatency').textContent = (r.avg_latency_ms || 0).toFixed(0) + 'ms';
+      document.getElementById('vRegs').textContent = (regs && regs.length) ? regs.length : (r.regressions_count || 0);
+      document.getElementById('runSubhead').textContent = `Run: ${(r.run_id || '').substring(0, 12)}`;
+
+      // Table
+      renderTable(runs, r.run_id);
+      // Charts
+      renderScoreChart(runs);
+      renderLatencyChart(runs);
+      // Regressions
+      if (regs) renderRegressions(regs);
     }
 
-    function renderTable(runs, regs) {
-      const regSet = new Set(regs.map(r => r.task_id));
-      const tbody = document.getElementById('tBody');
-      if (!runs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No results</td></tr>'; return; }
-      tbody.innerHTML = runs.map(r => {
-        const name = taskMap[r.task_id] || r.task_id;
-        let cls = 'badge-pass', txt = 'PASS';
-        if (regSet.has(r.task_id)) { cls = 'badge-fail'; txt = 'REGRESSION'; }
-        else if (r.score < 0.7) { cls = 'badge-warn'; txt = 'BORDERLINE'; }
-        return `<tr><td><strong>${esc(name)}</strong></td><td>${esc(r.model)}</td><td>${r.score.toFixed(2)}</td><td>${Math.round(r.latency_ms)}ms</td><td>${r.tokens_used}</td><td><span class="badge ${cls}">${txt}</span></td></tr>`;
-      }).join('');
+    // ===== RESULTS TABLE =====
+    function renderTable(runs, runId) {
+      const tb = document.getElementById('tBody');
+      if (!runs.length) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty">No task outputs for this run</td></tr>';
+        return;
+      }
+
+      let html = '';
+      runs.forEach((run, i) => {
+        const sc = run.score ?? 0;
+        const pct = (sc * 100).toFixed(0);
+        const badgeCls = sc >= 0.7 ? 'badge-pass' : sc >= 0.4 ? 'badge-warn' : 'badge-fail';
+        const statusText = sc >= 0.7 ? 'PASS' : sc >= 0.4 ? 'WARN' : 'FAIL';
+        const tName = run.task_name || taskMap[run.task_id] || run.task_id;
+        const prompt = run.input_prompt || taskDetailMap[run.task_id]?.input_prompt || '—';
+        const promptShort = prompt.length > 60 ? prompt.substring(0, 60) + '…' : prompt;
+        const fb = currentFeedback[run.task_id];
+        const fbStars = fb ? '★'.repeat(fb.rating) + '☆'.repeat(5 - fb.rating) : '—';
+        const fbColor = fb ? (fb.rating >= 4 ? 'var(--green)' : fb.rating >= 3 ? 'var(--amber)' : 'var(--red)') : 'var(--dim)';
+
+        html += `
+          <tr class="task-row" onclick="toggleDetail(${i})">
+            <td style="color:var(--dim); font-size:10px;">▸</td>
+            <td><strong style="font-size:12px;">${esc(tName)}</strong></td>
+            <td style="max-width:220px; font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(prompt)}">${esc(promptShort)}</td>
+            <td><span class="badge ${badgeCls}">${pct}%</span></td>
+            <td class="mono" style="font-size:11px;">${(run.latency_ms||0).toFixed(0)}ms</td>
+            <td class="mono" style="font-size:11px;">${run.tokens_used || 0}</td>
+            <td><span class="badge ${badgeCls}">${statusText}</span></td>
+            <td style="font-size:12px; color:${fbColor};">${fbStars}</td>
+          </tr>
+          <tr class="detail-row" id="detail-${i}">
+            <td colspan="8">
+              ${renderDetailPane(run, runId, i)}
+            </td>
+          </tr>
+        `;
+      });
+      tb.innerHTML = html;
     }
 
-    function renderChart(runs) {
-      if (chart) chart.destroy();
-      if (!runs.length) return;
-      chart = new Chart(document.getElementById('scoreChart').getContext('2d'), {
+    // ===== DETAIL PANE (EXPLAINABLE) =====
+    function renderDetailPane(run, runId, idx) {
+      const prompt = run.input_prompt || taskDetailMap[run.task_id]?.input_prompt || 'N/A';
+      const expected = run.expected_output || taskDetailMap[run.task_id]?.expected_output || 'N/A';
+      const output = run.output || 'N/A';
+      const sc = run.score ?? 0;
+      const pct = (sc * 100).toFixed(0);
+      const barColor = sc >= 0.7 ? 'var(--green)' : sc >= 0.4 ? 'var(--amber)' : 'var(--red)';
+      const fb = currentFeedback[run.task_id];
+      const tags = (run.tags || taskDetailMap[run.task_id]?.tags || []);
+
+      let fbHtml = '';
+      if (fb) {
+        const humanScore = (fb.rating / 5 * 100).toFixed(0);
+        const autoScore = pct;
+        const diff = humanScore - autoScore;
+        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '=';
+        const arrowCls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+        fbHtml = `
+          <div class="fb-delta">
+            <h5>📊 Feedback vs Auto-Score Comparison</h5>
+            <div class="delta-row"><span class="label">Auto Score:</span> <strong>${autoScore}%</strong></div>
+            <div class="delta-row"><span class="label">Human Score:</span> <strong>${humanScore}%</strong> (${fb.rating}/5 ★)</div>
+            <div class="delta-row"><span class="label">Delta:</span> <span class="delta-arrow ${arrowCls}">${arrow} ${Math.abs(diff)}%</span></div>
+            ${fb.notes ? `<div style="margin-top:6px; font-size:11px; color:var(--muted);"><em>"${esc(fb.notes)}"</em></div>` : ''}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="detail-pane">
+          <!-- STAGE 1: Input -->
+          <div class="detail-section">
+            <h4><span class="dot" style="background:var(--accent);"></span> Stage 1 — Input Prompt</h4>
+            <pre>${esc(prompt)}</pre>
+            <div style="margin-top:10px;">
+              <h4><span class="dot" style="background:var(--cyan);"></span> Expected Output</h4>
+              <pre>${esc(expected)}</pre>
+            </div>
+            ${tags.length ? `<div style="margin-top:8px;">${tags.map(t => `<span class="badge" style="background:rgba(88,166,255,0.1);color:var(--accent);margin-right:4px;">${t}</span>`).join('')}</div>` : ''}
+          </div>
+
+          <!-- STAGE 2: Model Output -->
+          <div class="detail-section">
+            <h4><span class="dot" style="background:var(--green);"></span> Stage 2 — Model Response</h4>
+            <div class="output-text" style="background:var(--bg); padding:10px; border-radius:4px;">${esc(output)}</div>
+            <div style="margin-top:12px; font-size:11px; color:var(--muted);">
+              <div>Model: <strong style="color:var(--text)">${run.model || 'qwen2.5:7b'}</strong></div>
+              <div>Latency: <strong style="color:var(--text)">${(run.latency_ms||0).toFixed(0)}ms</strong></div>
+              <div>Tokens: <strong style="color:var(--text)">${run.tokens_used || 0}</strong></div>
+            </div>
+          </div>
+
+          <!-- STAGE 3: Judge Score + Feedback -->
+          <div class="detail-section">
+            <h4><span class="dot" style="background:var(--amber);"></span> Stage 3 — Judge Score</h4>
+            <div class="score-gauge">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%; background:${barColor};"></div></div>
+              <strong class="mono" style="font-size:14px; color:${barColor};">${pct}%</strong>
+            </div>
+            <div style="margin-top:8px; font-size:11px; color:var(--muted);">
+              ${sc >= 0.7 ? '<span style="color:var(--green);">✓ Passes threshold (≥70%)</span>' : sc >= 0.4 ? '<span style="color:var(--amber);">⚠ Below threshold (40-69%)</span>' : '<span style="color:var(--red);">✗ Failing score (<40%)</span>'}
+            </div>
+
+            <!-- Human Feedback Input -->
+            <div class="feedback-section">
+              <h4><span class="dot" style="background:var(--purple);"></span> Human Feedback (RLHF)</h4>
+              <div class="stars" id="stars-${idx}" data-tid="${run.task_id}" data-rating="${fb ? fb.rating : 0}">
+                ${[1,2,3,4,5].map(v => `<span class="star${fb && v <= fb.rating ? ' on' : ''}" onclick="setStar(this,${v})">★</span>`).join('')}
+              </div>
+              <textarea class="fb-notes" id="fbNote-${idx}" placeholder="Add critique or guidance (e.g. 'Make it concise, mention 30-day refund policy')...">${fb ? fb.notes : ''}</textarea>
+              <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-primary" onclick="sendFeedback('${runId}','${run.task_id}',${idx})">
+                  ${fb ? '✎ Save Rating' : '✓ Save Rating'}
+                </button>
+                <button class="btn btn-sm" id="btnReEval-${idx}" style="background:rgba(188,140,255,0.15); border-color:var(--purple); color:var(--purple); font-weight:600;" onclick="reEvaluateWithFeedback('${runId}','${run.task_id}',${idx})">
+                  🚀 Re-Run with RLHF Guidance
+                </button>
+              </div>
+              <div id="reEvalResult-${idx}" style="margin-top:8px;"></div>
+            </div>
+
+            ${fbHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== TOGGLE DETAIL ROW =====
+    function toggleDetail(idx) {
+      const row = document.getElementById('detail-' + idx);
+      if (row) {
+        row.classList.toggle('open');
+        // Update arrow
+        const prev = row.previousElementSibling;
+        if (prev) {
+          const arrow = prev.querySelector('td:first-child');
+          if (arrow) arrow.textContent = row.classList.contains('open') ? '▾' : '▸';
+        }
+      }
+    }
+
+    // ===== CHARTS =====
+    function renderScoreChart(runs) {
+      const ctx = document.getElementById('scoreChart').getContext('2d');
+      if (chart1) chart1.destroy();
+      const labels = runs.map(r => (r.task_name || taskMap[r.task_id] || r.task_id).substring(0, 14));
+      const data = runs.map(r => ((r.score || 0) * 100).toFixed(0));
+      chart1 = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: runs.map(r => (taskMap[r.task_id] || r.task_id).substring(0, 15)),
+          labels,
           datasets: [{
-            label: 'Score', data: runs.map(r => r.score),
-            backgroundColor: runs.map(r => r.score >= 0.7 ? 'rgba(63,185,80,0.6)' : 'rgba(248,81,73,0.6)'),
-            borderRadius: 4
+            label: 'Score %',
+            data,
+            backgroundColor: data.map(v => v >= 70 ? 'rgba(63,185,80,0.5)' : v >= 40 ? 'rgba(210,153,34,0.5)' : 'rgba(248,81,73,0.5)'),
+            borderColor: data.map(v => v >= 70 ? '#3fb950' : v >= 40 ? '#d29922' : '#f85149'),
+            borderWidth: 1, borderRadius: 4
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 1, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }, x: { ticks: { color: '#8b949e', maxRotation: 45 }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { min: 0, max: 100, grid: { color: 'rgba(48,54,61,0.4)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { color: '#8b949e', maxRotation: 45, font: { size: 9 } } }
+          },
+          plugins: { legend: { display: false } }
+        }
       });
     }
 
-    function renderRegs(regs) {
+    function renderLatencyChart(runs) {
+      const ctx = document.getElementById('latencyChart').getContext('2d');
+      if (chart2) chart2.destroy();
+      const labels = runs.map(r => (r.task_name || taskMap[r.task_id] || r.task_id).substring(0, 14));
+      chart2 = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Latency (ms)',
+              data: runs.map(r => (r.latency_ms || 0).toFixed(0)),
+              backgroundColor: 'rgba(88,166,255,0.4)',
+              borderColor: '#58a6ff',
+              borderWidth: 1, borderRadius: 4,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Tokens',
+              data: runs.map(r => r.tokens_used || 0),
+              backgroundColor: 'rgba(188,140,255,0.35)',
+              borderColor: '#bc8cff',
+              borderWidth: 1, borderRadius: 4,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { position: 'left', grid: { color: 'rgba(48,54,61,0.4)' }, ticks: { color: '#58a6ff', font: { size: 10 } }, title: { display: true, text: 'Latency (ms)', color: '#58a6ff', font: { size: 10 } } },
+            y1: { position: 'right', grid: { display: false }, ticks: { color: '#bc8cff', font: { size: 10 } }, title: { display: true, text: 'Tokens', color: '#bc8cff', font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { color: '#8b949e', maxRotation: 45, font: { size: 9 } } }
+          },
+          plugins: { legend: { labels: { color: '#8b949e', font: { size: 10 } } } }
+        }
+      });
+    }
+
+    // ===== REGRESSIONS =====
+    function renderRegressions(regs) {
       const p = document.getElementById('regPanel');
-      if (!regs.length) { p.innerHTML = '<div class="empty">No regressions detected ✓</div>'; return; }
+      if (!regs || !regs.length) { p.innerHTML = '<div class="empty">✓ No regressions detected vs baseline</div>'; return; }
       p.innerHTML = regs.map(r => `
-        <div class="reg-item" onclick="this.nextElementSibling.classList.toggle('open')">
-          <strong>${esc(r.task_name)}</strong> <span style="float:right;color:var(--red)">Δ ${r.delta.toFixed(2)}</span>
+        <div style="padding:10px 16px; border-bottom:1px solid var(--border);">
+          <div style="font-weight:600; font-size:12px;">${r.task_name || r.task_id}</div>
+          <div style="font-size:11px; color:var(--red); margin-top:3px;">
+            Score: ${(r.baseline_score*100).toFixed(0)}% → ${(r.current_score*100).toFixed(0)}%
+            <span style="margin-left:8px;">Δ ${(r.delta*100).toFixed(0)}%</span>
+          </div>
         </div>
-        <div class="reg-detail">Baseline: ${r.baseline_score.toFixed(2)} → Current: ${r.current_score.toFixed(2)} | Model: ${esc(r.model)}</div>
       `).join('');
     }
 
-    function renderFeedback(runs, runId) {
-      const p = document.getElementById('fbPanel');
-      if (!runs.length) { p.innerHTML = '<div class="empty">No tasks to rate</div>'; return; }
-      p.innerHTML = runs.map(r => {
-        const name = taskMap[r.task_id] || r.task_id;
-        return `<div class="fb-item">
-          <div style="font-weight:600;font-size:13px">${esc(name)}</div>
-          <div style="font-size:11px;color:var(--muted);margin:4px 0">"${esc((r.output||'').substring(0,60))}…"</div>
-          <div class="stars" data-tid="${r.task_id}">${[1,2,3,4,5].map(i => `<span class="star" data-v="${i}" onclick="rate(this,${i})">★</span>`).join('')}</div>
-          <textarea id="n-${r.task_id}" placeholder="Notes…"></textarea>
-          <button class="btn" style="margin-top:6px;font-size:11px" onclick="submitFb('${runId}','${r.task_id}')">Submit</button>
-        </div>`;
-      }).join('');
+    // ===== FEEDBACK =====
+    function setStar(el, v) {
+      const c = el.parentElement;
+      c.dataset.rating = v;
+      c.querySelectorAll('.star').forEach((s, idx) => s.classList.toggle('on', idx < v));
     }
 
-    window.rate = (el, v) => {
-      const c = el.parentElement; c.dataset.rating = v;
-      [...c.children].forEach((s, i) => s.classList.toggle('on', i < v));
-    };
+    async function sendFeedback(runId, taskId, idx) {
+      const starsEl = document.getElementById('stars-' + idx);
+      const rating = parseInt(starsEl?.dataset.rating || '0');
+      if (rating === 0) { showToast('Please select a star rating first'); return; }
+      const notes = document.getElementById('fbNote-' + idx)?.value || '';
 
-    window.submitFb = async (rid, tid) => {
-      const rating = parseInt(document.querySelector(`.stars[data-tid="${tid}"]`).dataset.rating || '5');
-      const notes = document.getElementById(`n-${tid}`).value;
       try {
-        const r = await fetch('/feedback', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({run_id:rid, task_id:tid, rating, notes}) });
-        alert(r.ok ? 'Feedback saved ✓' : 'Failed to save');
-      } catch(e) { alert('Error: ' + e); }
-    };
+        const r = await fetch('/feedback', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ run_id: runId, task_id: taskId, rating, notes })
+        });
+        if (r.ok) {
+          const result = await r.json();
+          currentFeedback[taskId] = result;
+          showToast('✓ Feedback saved — refreshing...');
+          // Re-render to show the delta comparison
+          await loadActive();
+        }
+      } catch(e) { showToast('Failed: ' + e); }
+    }
 
-    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+    async function reEvaluateWithFeedback(runId, taskId, idx) {
+      const starsEl = document.getElementById('stars-' + idx);
+      const rating = parseInt(starsEl?.dataset.rating || '0') || 4;
+      const notes = document.getElementById('fbNote-' + idx)?.value || '';
+      const btn = document.getElementById('btnReEval-' + idx);
+      const resContainer = document.getElementById('reEvalResult-' + idx);
+
+      if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Re-running with Ollama...'; }
+      if (resContainer) {
+        resContainer.innerHTML = '<div style="font-size:11px; color:var(--purple); padding:8px; background:rgba(188,140,255,0.08); border-radius:4px;">Applying feedback critique → Prompting Ollama → LLM Judge scoring...</div>';
+      }
+
+      try {
+        const r = await fetch('/feedback/re-evaluate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ run_id: runId, task_id: taskId, rating, notes })
+        });
+        if (r.ok) {
+          const data = await r.json();
+          showToast(`✓ Sample re-evaluated! New score: ${(data.refined_score*100).toFixed(0)}% (${data.score_delta >= 0 ? '+' : ''}${(data.score_delta*100).toFixed(0)}%)`);
+          if (resContainer) {
+            const deltaColor = data.score_delta >= 0 ? 'var(--green)' : 'var(--red)';
+            const deltaSign = data.score_delta >= 0 ? '+' : '';
+            resContainer.innerHTML = `
+              <div style="margin-top:8px; padding:10px; background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.25); border-radius:6px; font-size:11px;">
+                <div style="font-weight:700; color:${deltaColor}; font-size:12px; margin-bottom:4px;">
+                  ✨ RLHF Alignment Result: ${(data.original_score*100).toFixed(0)}% → ${(data.refined_score*100).toFixed(0)}% (${deltaSign}${(data.score_delta*100).toFixed(0)}%)
+                </div>
+                <div style="color:var(--muted); margin-bottom:4px;">Judge Verdict: ${esc(data.judge_reason || 'Verified')}</div>
+                <div style="font-weight:600; color:var(--text); margin-top:6px;">Refined Output:</div>
+                <div style="background:var(--bg); padding:6px 8px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; margin-top:3px; max-height:100px; overflow-y:auto;">
+                  ${esc(data.refined_output)}
+                </div>
+              </div>
+            `;
+          }
+          // Refresh active run report so all stats & table update
+          await loadActive();
+        } else {
+          const err = await r.text();
+          showToast('Failed to re-evaluate: ' + err);
+          if (resContainer) resContainer.innerHTML = `<div style="font-size:11px; color:var(--red);">Error: ${esc(err)}</div>`;
+        }
+      } catch(e) {
+        showToast('Network error: ' + e);
+        if (resContainer) resContainer.innerHTML = `<div style="font-size:11px; color:var(--red);">Network error: ${esc(e.message)}</div>`;
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '🚀 Re-Run with RLHF Guidance'; }
+      }
+    }
+
+    // ===== DATASET MODAL =====
+    async function saveNewDataset() {
+      const name = document.getElementById('dsName').value.trim();
+      const rawJson = document.getElementById('dsJson').value.trim();
+      if (!name) return showToast('Enter a dataset name');
+      let tasks = [];
+      try {
+        tasks = JSON.parse(rawJson);
+        if (!Array.isArray(tasks) || tasks.length === 0) throw new Error('Must be a non-empty array');
+      } catch (err) { return showToast('Invalid JSON: ' + err.message); }
+
+      try {
+        const r = await fetch('/datasets', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, tasks }) });
+        if (r.ok) {
+          const res = await r.json();
+          showToast(`Dataset "${res.filename}" created with ${res.task_count} tasks`);
+          document.getElementById('datasetModal').classList.remove('active');
+          await loadDatasets();
+          document.getElementById('datasetSelect').value = res.path;
+          await loadTasks();
+        }
+      } catch (err) { showToast('Network error: ' + err); }
+    }
+
+    // ===== UTILITIES =====
+    function esc(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
   </script>
 </body>
 </html>
