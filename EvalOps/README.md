@@ -37,28 +37,42 @@ make report
 
 EvalOps is built as a **5-layer pipeline** where each layer feeds into the next:
 
+```mermaid
+graph TD
+    subgraph L1["Layer 1: Data"]
+        GD["Golden Datasets<br/>(Prompts, Expected Outputs, Tags)"]
+    end
+
+    subgraph L2["Layer 2: Inference"]
+        OC["Ollama Client (Local LLM)<br/>qwen2.5:7b / llama3"]
+        ER["EvalRunner<br/>(Google Agent SDK Orchestration)"]
+    end
+
+    subgraph L3["Layer 3: Scoring"]
+        ES["Deterministic Scorer<br/>(Jaccard, Exact Match, Composite)"]
+        LJ["LLM-as-Judge<br/>(Semantic Evaluation, Hallucination Check)"]
+    end
+
+    subgraph L4["Layer 4: Analysis"]
+        RE["Regression Engine<br/>(Score Drops vs Baseline)"]
+        PC["Pairwise Comparator<br/>(A/B Model Delta)"]
+    end
+
+    subgraph L5["Layer 5: Reporting & UI"]
+        API["FastAPI REST Server"]
+        DASH["Modern Web Dashboard<br/>(Runs, Scores, Alerts, Feedback)"]
+        DB[("SQLite Database")]
+    end
+
+    GD --> ER
+    ER --> OC
+    OC --> ES & LJ
+    ES & LJ --> RE & PC
+    RE & PC --> DB
+    DB --> API
+    API --> DASH
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Layer 1: DATA — Golden Datasets                                │
-│  JSON files with input prompts, expected outputs, and tags      │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 2: INFERENCE — Ollama Client + EvalRunner                │
-│  Sends prompts to local Ollama models, records latency/tokens   │
-│  Orchestrated via Google Agent SDK (agentic task runner)        │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 3: SCORING — EvalScorer + LLMJudge                       │
-│  Deterministic scoring (Jaccard, exact match, composite) plus   │
-│  LLM-as-judge for semantic evaluation and hallucination detect  │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 4: ANALYSIS — RegressionEngine + PairwiseComparator      │
-│  Detects score drops vs baseline, compares model outputs A/B,   │
-│  generates regression alerts and formatted reports              │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 5: REPORTING — FastAPI + Dashboard + MetricsCollector     │
-│  REST API endpoints, Chart.js dashboard, latency/token/cost     │
-│  metrics, human feedback loop, downloadable JSON reports        │
-└─────────────────────────────────────────────────────────────────┘
-```
+
 
 ### Tech Stack
 

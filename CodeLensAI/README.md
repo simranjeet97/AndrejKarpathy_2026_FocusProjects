@@ -4,31 +4,39 @@
 CodeLens AI is an automated, context-aware pull request code review agent built with FastAPI, LangGraph, and Ollama. It retrieves and scores relevant Jira tickets, architectural documentation, coding standards, and past reviews to assemble token-budget-optimized LLM prompts. Review results, including approval decisions and inline code comments, are posted back to GitHub, while metadata and execution history are logged to persistent SQLite and Excel stores.
 
 ## 2. Architecture Diagram
+
+```mermaid
+graph TD
+    PR["GitHub PR / Webhook / UI Manual Trigger"] --> API["FastAPI App<br/>(Endpoints, CORS, Static UI)"]
+    API --> RA["Review Agent<br/>(LangGraph Workflow)"]
+    
+    subgraph StateAndMemory["State & Caching"]
+        STM["Short-Term Memory<br/>(Dragonfly / Redis)"]
+        LTM["Long-Term Storage<br/>(SQLite + Excel Logs)"]
+    end
+    RA <--> STM
+    RA --> LTM
+
+    subgraph Harvester["Context Harvester & RAG"]
+        CH["Context Harvester"]
+        CDB["ChromaDB (Embeddings)<br/>nomic-embed-text"]
+        JIRA["Jira / Issue Metadata"]
+        CH --> CDB & JIRA
+    end
+    RA --> CH
+
+    subgraph LLMInference["Local LLM Reasoning"]
+        LLM["Ollama Client<br/>qwen2.5:7b"]
+    end
+    RA --> LLM
+
+    subgraph Output["Output Dispatcher"]
+        GH["GitHub API<br/>(Inline Review Comments)"]
+        UI["Modern Web Dashboard"]
+    end
+    RA --> GH & UI
 ```
-           +-------------------+
-           |    GitHub PR      |
-           |    Webhook        |
-           +---------+---------+
-                     |
-                     v
-           +---------+---------+
-           |    FastAPI App    |
-           +---------+---------+
-                     |
-                     v
-           +---------+---------+
-           |   Review Agent    | <--- Caches via ShortTermMemory (DragonflyDB)
-           |   (LangGraph)     |
-           +----+----+----+----+
-                |    |    |
-  +-------------+    |    +-------------+
-  |                  |                  |
-  v                  v                  v
-Context            LLM (Ollama)      Output Dispatcher
-Harvester          - Code model      - GitHub API (inline comments)
-- ChromaDB (RAG)   - Reason model    - SQLite database (history)
-- Jira Ticket      - Embed model     - Excel logger (sheet logs)
-```
+
 
 ## 3. Prerequisites
 - **Python**: `>=3.11`

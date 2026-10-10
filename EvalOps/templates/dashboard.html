@@ -3,365 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EvalOps Dashboard</title>
+  <title>EvalOps — LLM Evaluation Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #1f2937;
-      --text-muted: #6b7280;
-      --card: #f3f4f6;
-      --border: #e5e7eb;
-      --accent: #6c63ff;
-      --pass: #22c55e;
-      --fail: #ef4444;
-      --warn: #f59e0b;
-      --star-active: #fbbf24;
-      --star-inactive: #d1d5db;
+      --bg: #0e1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --dim: #484f58;
+      --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+      --amber: #d29922; --purple: #bc8cff; --radius: 10px;
     }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f1117;
-        --text: #f3f4f6;
-        --text-muted: #9ca3af;
-        --card: #1a1d27;
-        --border: #2d313e;
-        --accent: #818cf8;
-        --pass: #22c55e;
-        --fail: #ef4444;
-        --warn: #f59e0b;
-        --star-inactive: #4b5563;
-      }
-    }
+    /* Header */
+    .header { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header h1 span { color: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      transition: background-color 0.3s, color 0.3s;
-      padding: 24px;
-    }
+    /* Buttons */
+    .btn { padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #4c9aed; }
+    select.btn { appearance: auto; }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
+    /* Layout */
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
 
-    h1, h2, h3 {
-      margin: 0;
-    }
+    /* Stats Row */
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+    .stat-value { font-size: 24px; font-weight: 700; }
 
-    .logo-container {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    /* Controls */
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .controls label { font-size: 13px; color: var(--muted); }
 
-    .logo-badge {
-      background-color: var(--accent);
-      color: #ffffff;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 0.85em;
-    }
+    /* Grid layout */
+    .grid-2 { display: grid; grid-template-columns: 5fr 3fr; gap: 20px; }
 
-    button {
-      background-color: var(--accent);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: opacity 0.2s;
-    }
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+    .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
 
-    button:hover {
-      opacity: 0.9;
-    }
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 14px; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 14px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+    tbody tr:hover { background: rgba(88,166,255,0.04); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-pass { background: rgba(63,185,80,0.15); color: var(--green); }
+    .badge-warn { background: rgba(210,153,34,0.15); color: var(--amber); }
+    .badge-fail { background: rgba(248,81,73,0.15); color: var(--red); }
 
-    select {
-      background-color: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 6px;
-      outline: none;
-    }
+    /* Chart */
+    .chart-wrap { padding: 18px; height: 280px; position: relative; }
 
-    .controls-row {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin: 20px 0;
-    }
+    /* Regressions */
+    .reg-item { padding: 12px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .reg-item:hover { background: rgba(248,81,73,0.04); }
+    .reg-item:last-child { border-bottom: none; }
+    .reg-detail { display: none; padding: 8px 18px 14px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .reg-detail.open { display: block; }
 
-    /* Summary cards */
-    .summary-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
+    /* Feedback */
+    .fb-item { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    .fb-item:last-child { border-bottom: none; }
+    .stars { display: flex; gap: 4px; margin: 6px 0; }
+    .star { font-size: 20px; cursor: pointer; color: var(--dim); transition: color 0.1s; }
+    .star.on { color: #d29922; }
+    textarea { width: 100%; height: 48px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-family: inherit; font-size: 12px; resize: vertical; outline: none; }
+    textarea:focus { border-color: var(--accent); }
 
-    .card {
-      background-color: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .empty { padding: 30px; text-align: center; color: var(--dim); font-size: 13px; }
 
-    .card-title {
-      font-size: 0.85em;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-    }
-
-    .card-value {
-      font-size: 1.8em;
-      font-weight: bold;
-    }
-
-    /* Layout structure */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 1024px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .section-box {
-      background-color: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-
-    .section-title {
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-      font-size: 1.2em;
-    }
-
-    /* Table styling */
-    .table-container {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.9em;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.8em;
-      font-weight: bold;
-    }
-
-    .status-pass { background-color: rgba(34, 197, 94, 0.15); color: var(--pass); }
-    .status-warn { background-color: rgba(245, 158, 11, 0.15); color: var(--warn); }
-    .status-fail { background-color: rgba(239, 68, 68, 0.15); color: var(--fail); }
-
-    /* Collapsible regression panel */
-    .collapsible {
-      background-color: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 8px;
-      overflow: hidden;
-    }
-
-    .collapsible-header {
-      padding: 12px 16px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: rgba(0,0,0,0.02);
-    }
-
-    .collapsible-content {
-      padding: 16px;
-      display: none;
-      border-top: 1px solid var(--border);
-      font-size: 0.9em;
-      line-height: 1.5;
-    }
-
-    /* Feedback Stars widget */
-    .feedback-item {
-      border-bottom: 1px solid var(--border);
-      padding: 16px 0;
-    }
-
-    .feedback-item:last-child {
-      border-bottom: none;
-    }
-
-    .stars-container {
-      display: flex;
-      gap: 4px;
-      margin: 8px 0;
-    }
-
-    .star {
-      font-size: 1.5em;
-      cursor: pointer;
-      color: var(--star-inactive);
-      transition: color 0.1s;
-    }
-
-    textarea {
-      width: 100%;
-      height: 60px;
-      background-color: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px;
-      outline: none;
-      resize: vertical;
-      font-family: inherit;
-      box-sizing: border-box;
-      margin-bottom: 8px;
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-
-  <header>
-    <div class="logo-container">
-      <h2>EvalOps</h2>
-      <span class="logo-badge">Local-First Evals</span>
-    </div>
-    <div>
-      <button id="btnRunEval">Run Evaluation</button>
-    </div>
-  </header>
-
-  <div class="controls-row">
-    <label for="runSelect">Select Evaluation Run:</label>
-    <select id="runSelect">
-      <option value="">-- No Runs Loaded --</option>
-    </select>
-    <button id="btnLoadRun">Load</button>
-  </div>
-
-  <!-- Summary row -->
-  <div class="summary-row">
-    <div class="card">
-      <div class="card-title">Total Tasks</div>
-      <div class="card-value" id="valTotalTasks">-</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Pass Rate</div>
-      <div class="card-value" id="valPassRate">-</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Avg Score</div>
-      <div class="card-value" id="valAvgScore">-</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Avg Latency</div>
-      <div class="card-value" id="valAvgLatency">-</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Regressions</div>
-      <div class="card-value" id="valRegressions" style="color: var(--fail)">-</div>
+  <div class="header">
+    <h1><span>EvalOps</span> — LLM Regression Testing</h1>
+    <div class="header-right">
+      <button class="btn btn-primary" id="btnRunEval">▶ Run Evaluation</button>
     </div>
   </div>
 
-  <div class="main-grid">
-    <!-- Left panel -->
-    <div>
-      <!-- Results Table -->
-      <div class="section-box">
-        <div class="section-title">Evaluation Details</div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Task Name</th>
-                <th>Model</th>
-                <th>Score</th>
-                <th>Latency</th>
-                <th>Tokens</th>
-                <th>Hallucination</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="resultsTableBody">
-              <tr>
-                <td colspan="7" style="text-align: center; color: var(--text-muted);">Please select and load an evaluation run to view results.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Trend Chart -->
-      <div class="section-box">
-        <div class="section-title">Score Performance Curve</div>
-        <div style="position: relative; height: 300px; width: 100%;">
-          <canvas id="scoreChart"></canvas>
-        </div>
-      </div>
+  <div class="container">
+    <!-- Controls -->
+    <div class="controls">
+      <label>Evaluation Run:</label>
+      <select class="btn" id="runSelect"><option value="">-- No Runs --</option></select>
+      <button class="btn" id="btnLoadRun">Load Run</button>
     </div>
 
-    <!-- Right panel -->
-    <div>
-      <!-- Regressions Panel -->
-      <div class="section-box">
-        <div class="section-title">Detected Regressions</div>
-        <div id="regressionsPanelBody">
-          <p style="color: var(--text-muted); font-size: 0.9em;">No regressions detected in the active run.</p>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="vTasks">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pass Rate</div><div class="stat-value" id="vPass">—</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Score</div><div class="stat-value" id="vScore">—</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Latency</div><div class="stat-value" id="vLatency">—</div></div>
+      <div class="stat-card"><div class="stat-label">Regressions</div><div class="stat-value" id="vRegs" style="color:var(--red)">—</div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left Column -->
+      <div>
+        <!-- Results Table -->
+        <div class="card">
+          <div class="card-head">Evaluation Results</div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Task</th><th>Model</th><th>Score</th><th>Latency</th><th>Tokens</th><th>Status</th></tr></thead>
+              <tbody id="tBody"><tr><td colspan="6" class="empty">Select a run to view results</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Score Chart -->
+        <div class="card">
+          <div class="card-head">Score Comparison Chart</div>
+          <div class="chart-wrap"><canvas id="scoreChart"></canvas></div>
         </div>
       </div>
 
-      <!-- Human Feedback Panel -->
-      <div class="section-box">
-        <div class="section-title">Human Feedback Audit</div>
-        <div id="feedbackPanelBody">
-          <p style="color: var(--text-muted); font-size: 0.9em;">Load a run to evaluate outputs and submit ratings.</p>
+      <!-- Right Column -->
+      <div>
+        <!-- Regressions -->
+        <div class="card">
+          <div class="card-head" style="color:var(--red)">⚠ Detected Regressions</div>
+          <div id="regPanel"><div class="empty">No regressions found</div></div>
+        </div>
+
+        <!-- Human Feedback -->
+        <div class="card">
+          <div class="card-head">Human Feedback Audit</div>
+          <div id="fbPanel"><div class="empty">Load a run to submit ratings</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="/static/dashboard.js"></script>
+  <script>
+    let taskMap = {}, chart = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadTasks();
+      await loadRuns();
+      document.getElementById('btnLoadRun').addEventListener('click', loadActive);
+      document.getElementById('btnRunEval').addEventListener('click', triggerRun);
+    });
+
+    async function loadTasks() {
+      try { const r = await fetch('/tasks'); (await r.json()).forEach(t => taskMap[t.id] = t.name); } catch(e) {}
+    }
+
+    async function loadRuns() {
+      try {
+        const r = await fetch('/runs'), ids = await r.json();
+        const sel = document.getElementById('runSelect');
+        sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}">Run: ${id.substring(0,8)}…</option>`).join('') : '<option value="">-- No Runs --</option>';
+      } catch(e) {}
+    }
+
+    async function triggerRun() {
+      const model = prompt('Model name to evaluate:', 'qwen2.5:7b');
+      if (!model) return;
+      try {
+        const r = await fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({dataset_path:'golden_datasets/example_dataset.json', model}) });
+        const d = await r.json();
+        alert('Run started! ID: ' + d.run_id);
+        setTimeout(loadRuns, 2000);
+      } catch(e) { alert('Failed: ' + e); }
+    }
+
+    async function loadActive() {
+      const runId = document.getElementById('runSelect').value;
+      if (!runId) return alert('Select a run first');
+      try {
+        const [rpt, regs] = await Promise.all([
+          fetch(`/runs/${runId}`).then(r => r.json()),
+          fetch(`/runs/${runId}/regressions`).then(r => r.json())
+        ]);
+        renderStats(rpt);
+        renderTable(rpt.runs || [], regs);
+        renderRegs(regs);
+        renderFeedback(rpt.runs || [], runId);
+        renderChart(rpt.runs || []);
+      } catch(e) { alert('Error: ' + e); }
+    }
+
+    function renderStats(r) {
+      document.getElementById('vTasks').textContent = r.total_tasks ?? '—';
+      document.getElementById('vPass').textContent = r.pass_rate != null ? Math.round(r.pass_rate * 100) + '%' : '—';
+      document.getElementById('vScore').textContent = r.avg_score != null ? r.avg_score.toFixed(2) : '—';
+      document.getElementById('vLatency').textContent = r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) + 'ms' : '—';
+      document.getElementById('vRegs').textContent = r.regressions ?? '0';
+    }
+
+    function renderTable(runs, regs) {
+      const regSet = new Set(regs.map(r => r.task_id));
+      const tbody = document.getElementById('tBody');
+      if (!runs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No results</td></tr>'; return; }
+      tbody.innerHTML = runs.map(r => {
+        const name = taskMap[r.task_id] || r.task_id;
+        let cls = 'badge-pass', txt = 'PASS';
+        if (regSet.has(r.task_id)) { cls = 'badge-fail'; txt = 'REGRESSION'; }
+        else if (r.score < 0.7) { cls = 'badge-warn'; txt = 'BORDERLINE'; }
+        return `<tr><td><strong>${esc(name)}</strong></td><td>${esc(r.model)}</td><td>${r.score.toFixed(2)}</td><td>${Math.round(r.latency_ms)}ms</td><td>${r.tokens_used}</td><td><span class="badge ${cls}">${txt}</span></td></tr>`;
+      }).join('');
+    }
+
+    function renderChart(runs) {
+      if (chart) chart.destroy();
+      if (!runs.length) return;
+      chart = new Chart(document.getElementById('scoreChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: runs.map(r => (taskMap[r.task_id] || r.task_id).substring(0, 15)),
+          datasets: [{
+            label: 'Score', data: runs.map(r => r.score),
+            backgroundColor: runs.map(r => r.score >= 0.7 ? 'rgba(63,185,80,0.6)' : 'rgba(248,81,73,0.6)'),
+            borderRadius: 4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 1, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }, x: { ticks: { color: '#8b949e', maxRotation: 45 }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      });
+    }
+
+    function renderRegs(regs) {
+      const p = document.getElementById('regPanel');
+      if (!regs.length) { p.innerHTML = '<div class="empty">No regressions detected ✓</div>'; return; }
+      p.innerHTML = regs.map(r => `
+        <div class="reg-item" onclick="this.nextElementSibling.classList.toggle('open')">
+          <strong>${esc(r.task_name)}</strong> <span style="float:right;color:var(--red)">Δ ${r.delta.toFixed(2)}</span>
+        </div>
+        <div class="reg-detail">Baseline: ${r.baseline_score.toFixed(2)} → Current: ${r.current_score.toFixed(2)} | Model: ${esc(r.model)}</div>
+      `).join('');
+    }
+
+    function renderFeedback(runs, runId) {
+      const p = document.getElementById('fbPanel');
+      if (!runs.length) { p.innerHTML = '<div class="empty">No tasks to rate</div>'; return; }
+      p.innerHTML = runs.map(r => {
+        const name = taskMap[r.task_id] || r.task_id;
+        return `<div class="fb-item">
+          <div style="font-weight:600;font-size:13px">${esc(name)}</div>
+          <div style="font-size:11px;color:var(--muted);margin:4px 0">"${esc((r.output||'').substring(0,60))}…"</div>
+          <div class="stars" data-tid="${r.task_id}">${[1,2,3,4,5].map(i => `<span class="star" data-v="${i}" onclick="rate(this,${i})">★</span>`).join('')}</div>
+          <textarea id="n-${r.task_id}" placeholder="Notes…"></textarea>
+          <button class="btn" style="margin-top:6px;font-size:11px" onclick="submitFb('${runId}','${r.task_id}')">Submit</button>
+        </div>`;
+      }).join('');
+    }
+
+    window.rate = (el, v) => {
+      const c = el.parentElement; c.dataset.rating = v;
+      [...c.children].forEach((s, i) => s.classList.toggle('on', i < v));
+    };
+
+    window.submitFb = async (rid, tid) => {
+      const rating = parseInt(document.querySelector(`.stars[data-tid="${tid}"]`).dataset.rating || '5');
+      const notes = document.getElementById(`n-${tid}`).value;
+      try {
+        const r = await fetch('/feedback', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({run_id:rid, task_id:tid, rating, notes}) });
+        alert(r.ok ? 'Feedback saved ✓' : 'Failed to save');
+      } catch(e) { alert('Error: ' + e); }
+    };
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+  </script>
 </body>
 </html>

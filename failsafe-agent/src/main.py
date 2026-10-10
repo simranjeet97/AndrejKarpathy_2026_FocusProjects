@@ -48,22 +48,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     logger.info("Starting up application and initializing connections")
     
+    from src.resilience.local_adapters import InMemoryRedis, LocalSqlitePool
+
     # Initialize Redis Client
     try:
         app.state.redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
         await app.state.redis_client.ping()
         logger.info("Successfully connected to Redis")
     except Exception as e:
-        logger.error("Failed to connect to Redis on startup", error=str(e))
-        app.state.redis_client = None
+        logger.warn("Redis unavailable, using local in-memory Redis adapter", error=str(e))
+        app.state.redis_client = InMemoryRedis()
 
     # Initialize Postgres Connection Pool
     try:
         app.state.db_pool = await asyncpg.create_pool(dsn=DATABASE_URL)
         logger.info("Successfully connected to Postgres pool")
     except Exception as e:
-        logger.error("Failed to connect to Postgres pool on startup", error=str(e))
-        app.state.db_pool = None
+        logger.warn("Postgres unavailable, using local SQLite audit pool", error=str(e))
+        local_pool = LocalSqlitePool()
+        await local_pool.init_db()
+        app.state.db_pool = local_pool
 
     yield
 
@@ -151,3 +155,11 @@ async def health_check(request: Request) -> Dict[str, Any]:
         "redis_ok": redis_ok,
         "uptime_seconds": uptime_seconds,
     }
+
+
+# Mount static web dashboard UI
+from fastapi.staticfiles import StaticFiles
+
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(_static_dir):
+    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")

@@ -8,35 +8,34 @@ It persists analyzed results in a local SQLite database and compiles structured 
 
 ## 1. Multi-Agent Architecture
 
-The orchestration workflow manages parallel data collection followed by a sequential synthesis pass:
+The orchestration workflow manages parallel data collection across domain specialists followed by a synthesis pass:
 
+```mermaid
+graph TD
+    UI["User Input: Startup Name"] --> DO["DiligenceOrchestrator<br/>(Shared Memory & State)"]
+    
+    subgraph Specialists["Parallel Domain Specialists"]
+        MRA["Market Research Agent<br/>(Wikipedia, DDG Search)"]
+        CA["Competitor Agent<br/>(OpenCorporates, Features)"]
+        FA["Financial Agent<br/>(SEC EDGAR, Unit Economics)"]
+        LA["Legal Agent<br/>(USPTO, Trademarks, Risks)"]
+    end
+
+    DO --> MRA
+    DO --> CA
+    DO --> FA
+    DO --> LA
+
+    MRA --> JOIN{Sync Join Barrier}
+    CA --> JOIN
+    FA --> JOIN
+    LA --> JOIN
+
+    JOIN --> SA["Summarization Agent<br/>(Local Ollama qwen2.5:7b)"]
+    SA --> RR["ReportRenderer<br/>(Markdown / HTML / DOCX)"]
+    RR --> DASH["Interactive Web Dashboard & SQLite DB"]
 ```
-                       [User Input: Startup Name]
-                                   │
-                                   ▼
-                       ┌──────────────────────┐
-                       │DiligenceOrchestrator │◀───────── [Shared Memory]
-                       └──────────┬───────────┘
-                                  │
-      ┌───────────────────────────┼───────────────────────────┬──────────────────────────┐
-      ▼                           ▼                           ▼                          ▼
-┌──────────────┐            ┌───────────┐               ┌───────────┐              ┌───────────┐
-│MarketResearch│            │Competitor │               │ Financial │              │   Legal   │
-│    Agent     │            │   Agent   │               │   Agent   │              │   Agent   │
-└──────┬───────┘            └─────┬─────┘               └─────┬─────┘              └─────┬─────┘
-       │                          │                           │                          │
-       └──────────────────────────┼───────────────────────────┴──────────────────────────┘
-                                  │ (Sync Join / Wait for All to Complete)
-                                  ▼
-                       ┌────────────────────────┐
-                       │  Summarization Agent   │
-                       └──────────┬─────────────┘
-                                  │
-                                  ▼
-                       ┌────────────────────────┐
-                       │     ReportRenderer     │ ──▶ [Markdown / HTML / DOCX]
-                       └────────────────────────┘
-```
+
 
 ---
 

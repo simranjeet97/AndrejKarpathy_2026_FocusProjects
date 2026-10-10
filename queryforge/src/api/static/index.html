@@ -3,191 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QueryForge — Multi-Tool Research Dashboard</title>
-  <!-- Google Fonts: Space Grotesk & Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <title>QueryForge — Multi-Tool Research Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0e1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --dim: #484f58;
+      --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+      --amber: #d29922; --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .header { padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header h1 span { color: var(--accent); }
+    .health { display: flex; gap: 16px; align-items: center; }
+    .health-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+    .dot.ok { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,0.5); }
+    .dot.err { background: var(--red); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 18px; }
+
+    /* Query Input */
+    .query-area { display: flex; gap: 10px; }
+    textarea { flex: 1; height: 64px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: inherit; font-size: 13px; resize: vertical; outline: none; }
+    textarea:focus { border-color: var(--accent); }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; white-space: nowrap; }
+    .btn:hover { background: #4c9aed; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: 6px; }
+
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .ex-btn { padding: 5px 10px; background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.2); border-radius: 6px; color: var(--accent); font-size: 11px; cursor: pointer; transition: all 0.15s; }
+    .ex-btn:hover { background: rgba(88,166,255,0.15); }
+
+    /* 2-col layout */
+    .grid-side { display: grid; grid-template-columns: 260px 1fr; gap: 20px; flex: 1; }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 16px; }
+    .sidebar .card-body { padding: 14px; }
+
+    /* Tools */
+    .tool-item { padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-size: 12px; }
+    .tool-item:last-child { border-bottom: none; }
+    .tool-name { font-weight: 600; color: var(--text); }
+    .tool-desc { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    /* PDF */
+    .drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; color: var(--muted); font-size: 12px; transition: border-color 0.15s; }
+    .drop-zone:hover { border-color: var(--accent); }
+    .pdf-result { margin-top: 12px; font-size: 12px; line-height: 1.6; }
+    .pdf-result h4 { color: var(--accent); margin-bottom: 4px; }
+
+    /* Pipeline */
+    .pipeline { display: flex; gap: 8px; margin-bottom: 14px; }
+    .pipe-step { flex: 1; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); font-size: 11px; text-align: center; color: var(--dim); transition: all 0.2s; }
+    .pipe-step.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.06); }
+    .pipe-step.done { border-color: var(--green); color: var(--green); }
+
+    /* Response */
+    .response-body { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+    .sources-list { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .sources-list li { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+
+    .hidden { display: none !important; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 800px) { .grid-side { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
-  <!-- Mesh gradients for background depth -->
-  <div class="mesh-bg"></div>
-
-  <div class="dashboard-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="logo-area">
-        <span class="logo-icon">▲</span>
-        <h1>QUERY<span>FORGE</span></h1>
-        <span class="logo-subtext">Multi-Tool Research HUD</span>
-      </div>
-      
-      <div class="health-monitoring">
-        <div class="status-indicator" id="status-api">
-          <span class="indicator-dot"></span>
-          <span class="indicator-label">API</span>
-        </div>
-        <div class="status-indicator" id="status-db">
-          <span class="indicator-dot"></span>
-          <span class="indicator-label">DATABASE</span>
-        </div>
-        <div class="status-indicator" id="status-cache">
-          <span class="indicator-dot"></span>
-          <span class="indicator-label">CACHE</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content Grid -->
-    <main class="dashboard-main">
-      
-      <!-- Sidebar Panel -->
-      <aside class="sidebar-panel">
-        
-        <!-- Action Control: Clear Cache -->
-        <section class="sidebar-section control-actions-section">
-          <h2>CONTROLS</h2>
-          <button id="btn-clear-cache" class="btn btn-secondary btn-full">
-            <span class="btn-icon">⚡</span> CLEAR CACHE
-          </button>
-        </section>
-
-        <!-- PDF Document Ingestion Widget -->
-        <section class="sidebar-section pdf-ingestion-section">
-          <h2>PDF INGESTION</h2>
-          <div class="pdf-drop-zone" id="pdf-drop-zone">
-            <span class="drop-zone-icon">⤓</span>
-            <span class="drop-zone-text">Drag & Drop PDF or Click</span>
-            <input type="file" id="pdf-file-input" accept="application/pdf" hidden>
-          </div>
-          
-          <!-- PDF Processing Result Panel -->
-          <div id="pdf-result-card" class="glass-card pdf-result-card hidden">
-            <div class="pdf-result-header">
-              <span id="pdf-filename" class="pdf-title">report.pdf</span>
-              <span id="pdf-pages" class="badge badge-yellow">12 pages</span>
-            </div>
-            <div class="pdf-result-summary">
-              <h3>Executive Summary</h3>
-              <p id="pdf-summary-text">Processing document...</p>
-            </div>
-            <div class="pdf-result-bullets">
-              <h3>Key Findings</h3>
-              <ul id="pdf-bullets-list"></ul>
-            </div>
-            <div class="pdf-result-meta">
-              <span>Tokens: <strong id="pdf-tokens">0</strong></span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Tool Registry / Statistics -->
-        <section class="sidebar-section tools-section">
-          <h2>TOOL REGISTRY <span class="badge badge-red" id="tools-count">0</span></h2>
-          <div class="tools-list" id="tools-list">
-            <!-- Dynamically populated -->
-            <div class="tool-skeleton">Loading registry...</div>
-          </div>
-        </section>
-
-      </aside>
-
-      <!-- Main Workspace -->
-      <section class="workspace-panel">
-        
-        <!-- Query Input Card -->
-        <div class="glass-card query-card">
-          <div class="card-header">
-            <h2>RESEARCH QUERY BUILDER</h2>
-            <span class="card-subtitle">Ask the agent to research, analyze, and generate metrics/charts.</span>
-          </div>
-          <div class="query-input-wrapper">
-            <textarea id="query-input" placeholder="e.g., Find our highest churn customer segment and compare with industry trends..." rows="3"></textarea>
-            <button id="btn-run-query" class="btn btn-primary">
-              FORGE QUERY <span class="btn-icon-right">➔</span>
-            </button>
-          </div>
-          <div class="quick-examples">
-            <span class="example-label">Try:</span>
-            <button class="btn-example">Find our highest churn customer segment and compare with industry trends</button>
-            <button class="btn-example">What is our current monthly recurring revenue (MRR) for the Enterprise segment compared to last month?</button>
-            <button class="btn-example">Generate a chart of customer counts by segment for the past 6 months</button>
-          </div>
-        </div>
-
-        <!-- Query Execution Pipeline Stepper -->
-        <div id="pipeline-card" class="glass-card pipeline-card hidden">
-          <div class="card-header">
-            <h2>AGENT EXECUTION TIMELINE</h2>
-            <div class="pipeline-status">
-              <span class="status-pulse-dot"></span>
-              <span id="pipeline-status-text">Planning execution sequence...</span>
-            </div>
-          </div>
-          <div class="timeline" id="pipeline-steps">
-            <!-- Dynamic stepper items -->
-          </div>
-        </div>
-
-        <!-- Agent Response Card -->
-        <div id="response-card" class="glass-card response-card hidden">
-          <div class="card-header border-bottom">
-            <div class="response-title-area">
-              <h2>SYNTHESIZED INSIGHTS</h2>
-              <span class="badge badge-yellow" id="latency-badge">0.0s</span>
-            </div>
-          </div>
-          <div class="response-body">
-            <div class="answer-content" id="response-answer">
-              <!-- Synthesized answer markdown rendered here -->
-            </div>
-            
-            <!-- Collapsible Sources List -->
-            <details id="sources-details" class="sources-details">
-              <summary>View Data Sources & Citing References</summary>
-              <div class="sources-content">
-                <ul id="response-sources"></ul>
-              </div>
-            </details>
-          </div>
-        </div>
-
-        <!-- Chart Output Gallery -->
-        <div id="charts-card" class="glass-card charts-card hidden">
-          <div class="card-header">
-            <h2>ANALYTICAL VISUALIZATIONS</h2>
-            <span class="card-subtitle">Generated Cohort / Trend Analytics</span>
-          </div>
-          <div class="charts-gallery" id="charts-gallery">
-            <!-- Dynamic images loaded from /charts/{filename} -->
-          </div>
-        </div>
-
-      </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="app-footer">
-      <span>QueryForge Research Engine v0.1.0</span>
-      <span>•</span>
-      <span>Offline-first Multi-Tool Architecture</span>
-    </footer>
+  <div class="header">
+    <h1><span>QueryForge</span> — Multi-Tool Research Agent</h1>
+    <div class="health">
+      <div class="health-item"><div class="dot" id="dApi"></div> API</div>
+      <div class="health-item"><div class="dot" id="dDb"></div> Database</div>
+      <div class="health-item"><div class="dot" id="dCache"></div> Cache</div>
+    </div>
   </div>
 
-  <!-- Dialog: Cache cleared notification -->
-  <dialog id="dialog-notification" class="notification-dialog">
-    <form method="dialog">
-      <div class="dialog-content">
-        <h3 id="dialog-title">Notification</h3>
-        <p id="dialog-message">Message text...</p>
-        <button class="btn btn-primary">DISMISS</button>
+  <div class="container">
+    <!-- Query Input -->
+    <div class="card">
+      <div class="card-head">Research Query <button class="btn-ghost btn-sm" id="btnClear" onclick="clearCache()">⚡ Clear Cache</button></div>
+      <div class="card-body">
+        <div class="query-area">
+          <textarea id="queryInput" placeholder="Ask a research question… e.g., Find our highest churn customer segment and compare with industry trends"></textarea>
+          <button class="btn" id="btnRun" onclick="runQuery()">Forge Query →</button>
+        </div>
+        <div class="examples">
+          <span class="ex-btn" onclick="setQ('Find our highest churn customer segment and compare with industry trends')">Churn Analysis</span>
+          <span class="ex-btn" onclick="setQ('What is our current MRR for the Enterprise segment compared to last month?')">MRR Report</span>
+          <span class="ex-btn" onclick="setQ('Generate a chart of customer counts by segment for the past 6 months')">Segment Chart</span>
+        </div>
       </div>
-    </form>
-  </dialog>
+    </div>
 
-  <!-- JS Logic -->
-  <script src="app.js"></script>
+    <div class="grid-side">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- PDF Ingestion -->
+        <div class="card">
+          <div class="card-head">📄 PDF Ingestion</div>
+          <div class="card-body">
+            <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfInput').click()">
+              ⤓ Drop PDF or Click to Upload
+              <input type="file" id="pdfInput" accept=".pdf" hidden>
+            </div>
+            <div id="pdfResult" class="pdf-result hidden"></div>
+          </div>
+        </div>
+
+        <!-- Tools -->
+        <div class="card">
+          <div class="card-head">🔧 Tool Registry <span style="color:var(--muted);font-size:12px" id="toolCount">0</span></div>
+          <div class="card-body" id="toolsList"><div style="color:var(--dim);font-size:12px">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- Main Workspace -->
+      <div>
+        <!-- Pipeline -->
+        <div class="card hidden" id="pipeCard">
+          <div class="card-head">Agent Pipeline <span style="font-size:12px;color:var(--muted)" id="pipeStatus">Running…</span></div>
+          <div class="card-body">
+            <div class="pipeline" id="pipeline">
+              <div class="pipe-step" id="ps1">1. Plan</div>
+              <div class="pipe-step" id="ps2">2. Gather</div>
+              <div class="pipe-step" id="ps3">3. Analyze</div>
+              <div class="pipe-step" id="ps4">4. Synthesize</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response -->
+        <div class="card hidden" id="respCard">
+          <div class="card-head">Synthesized Answer <span style="font-size:12px;color:var(--amber)" id="latencyBadge"></span></div>
+          <div class="card-body">
+            <div class="response-body" id="respBody"></div>
+            <div class="sources-list hidden" id="srcList"><strong style="font-size:12px;color:var(--muted)">Sources:</strong><ul id="srcUl"></ul></div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="card hidden" id="chartsCard">
+          <div class="card-head">Generated Charts</div>
+          <div class="card-body" id="chartsBody"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" style="padding:60px 20px;text-align:center;color:var(--dim);font-size:14px">
+          Enter a research query above to start. The agent will plan, gather data, analyze, and synthesize an answer.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setQ(t) { document.getElementById('queryInput').value = t; }
+
+    async function checkHealth() {
+      try {
+        const r = await fetch('/health'), d = await r.json();
+        document.getElementById('dApi').classList.toggle('ok', true);
+        document.getElementById('dDb').classList.toggle('ok', !!d.db);
+        document.getElementById('dDb').classList.toggle('err', !d.db);
+        document.getElementById('dCache').classList.toggle('ok', !!d.dragonfly);
+        document.getElementById('dCache').classList.toggle('err', !d.dragonfly);
+      } catch(e) {}
+    }
+
+    async function loadTools() {
+      try {
+        const r = await fetch('/tools'), tools = await r.json();
+        document.getElementById('toolCount').textContent = tools.length;
+        document.getElementById('toolsList').innerHTML = tools.map(t => `<div class="tool-item"><div class="tool-name">${esc(t.name)}</div><div class="tool-desc">${esc(t.description)}</div></div>`).join('') || '<div style="color:var(--dim);font-size:12px">No tools registered</div>';
+      } catch(e) {}
+    }
+
+    async function runQuery() {
+      const q = document.getElementById('queryInput').value.trim();
+      if (!q) return;
+      const btn = document.getElementById('btnRun');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+      document.getElementById('emptyState').classList.add('hidden');
+      const pipe = document.getElementById('pipeCard');
+      pipe.classList.remove('hidden');
+      document.getElementById('pipeStatus').textContent = 'Running…';
+      ['ps1','ps2','ps3','ps4'].forEach(s => { document.getElementById(s).className = 'pipe-step'; });
+      document.getElementById('ps1').classList.add('active');
+      document.getElementById('respCard').classList.add('hidden');
+      document.getElementById('chartsCard').classList.add('hidden');
+
+      const t0 = Date.now();
+      setTimeout(() => document.getElementById('ps2').classList.add('active'), 500);
+
+      try {
+        const r = await fetch('/query', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({query: q}) });
+        const d = await r.json();
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+        ['ps1','ps2','ps3','ps4'].forEach(s => { const el = document.getElementById(s); el.classList.remove('active'); el.classList.add('done'); });
+        document.getElementById('pipeStatus').textContent = 'Complete ✓';
+
+        // Show response
+        document.getElementById('respCard').classList.remove('hidden');
+        document.getElementById('latencyBadge').textContent = elapsed + 's';
+        document.getElementById('respBody').textContent = d.answer || d.detail || JSON.stringify(d, null, 2);
+
+        // Sources
+        if (d.sources && d.sources.length) {
+          document.getElementById('srcList').classList.remove('hidden');
+          document.getElementById('srcUl').innerHTML = d.sources.map(s => `<li>${esc(typeof s === 'string' ? s : s.title || JSON.stringify(s))}</li>`).join('');
+        }
+
+        // Charts
+        if (d.charts && d.charts.length) {
+          document.getElementById('chartsCard').classList.remove('hidden');
+          document.getElementById('chartsBody').innerHTML = d.charts.map(c => `<img src="/charts/${esc(c)}" style="max-width:100%;border-radius:8px;margin-bottom:8px" alt="chart">`).join('');
+        }
+      } catch(e) {
+        alert('Query failed: ' + e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Forge Query →';
+      }
+    }
+
+    async function clearCache() {
+      try { await fetch('/cache/clear'); alert('Cache cleared ✓'); } catch(e) { alert('Failed: ' + e); }
+    }
+
+    // PDF Upload
+    document.getElementById('pdfInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const fd = new FormData(); fd.append('file', file);
+      try {
+        const r = await fetch('/ingest-pdf', { method: 'POST', body: fd });
+        const d = await r.json();
+        const res = document.getElementById('pdfResult');
+        res.classList.remove('hidden');
+        res.innerHTML = `
+          <h4>${esc(file.name)} (${d.page_count || '?'} pages)</h4>
+          <p><strong>Summary:</strong> ${esc(d.summary || '')}</p>
+          ${(d.key_points||[]).length ? '<p><strong>Key Points:</strong></p><ul>' + d.key_points.map(p=>'<li>'+esc(p)+'</li>').join('') + '</ul>' : ''}
+        `;
+      } catch(e) { alert('PDF upload failed: ' + e); }
+    });
+
+    document.getElementById('queryInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runQuery(); } });
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+    checkHealth();
+    loadTools();
+  </script>
 </body>
 </html>

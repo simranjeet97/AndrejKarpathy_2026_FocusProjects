@@ -16,19 +16,46 @@ This repository operationalizes system-level behavioral learning across five cor
 4. **Retention** — Improvement survives intervening unrelated tasks.
 5. **Non-Regression** — Previously solved capabilities do not deteriorate.
 
-```text
-feedback
-   ↓
-agent state changes
-   ↓
-feedback removed
-   ↓
-unseen evaluation
-   ↓
-transfer?
+## Architecture & Feedback Transfer Pipeline
+
+```mermaid
+graph TD
+    FB["Task Failure Feedback<br/>(Execution Trace & Pytest Results)"] --> COND{Agent Condition}
+    
+    subgraph Conditions["4 Evaluated Agent Architectures"]
+        BL["1. Baseline<br/>(Zero state saved)"]
+        RF["2. Reflection<br/>(Self-critique prompt)"]
+        MEM["3. Memory<br/>(Vector / Key-Value Store)"]
+        WF["4. Dynamic Workflow<br/>(Pipeline mutation)"]
+    end
+
+    COND --> BL
+    COND --> RF
+    COND --> MEM
+    COND --> WF
+
+    subgraph StateUpdate["State Mutation Phase"]
+        ST["Update Persistent Agent State<br/>(Store error diagnosis & strategy)"]
+    end
+    MEM --> ST
+    WF --> ST
+
+    subgraph EvaluationPhase["Transfer Evaluation (Feedback Cleared)"]
+        CLR["Clear Working Context Window"]
+        TSK["Present Unseen Task<br/>(Same family or cross-family)"]
+        EVAL["Run Deterministic Pytest Suite"]
+    end
+
+    BL --> CLR
+    RF --> CLR
+    ST --> CLR
+    CLR --> TSK --> EVAL
+
+    EVAL --> METRICS["Aggregated Evaluation Deck & UI<br/>(Metrics, Retention, Success Rates)"]
 ```
 
 ---
+
 
 ## 2. Experimental Conditions
 

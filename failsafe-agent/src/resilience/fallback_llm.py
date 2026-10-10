@@ -44,6 +44,40 @@ async def call_anthropic_api(
             "model": model,
         }
 
+    # Local Ollama route (if API key is ollama or local ollama configured)
+    ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    if api_key.startswith("ollama") or os.getenv("USE_OLLAMA", "true").lower() == "true":
+        ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+        formatted_messages = []
+        if system_prompt:
+            formatted_messages.append({"role": "system", "content": system_prompt})
+        for m in scrubbed_messages:
+            content = m.get("content", "")
+            if isinstance(content, list):
+                content = " ".join([b.get("text", "") for b in content if isinstance(b, dict)])
+            formatted_messages.append({"role": m.get("role", "user"), "content": content})
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{ollama_base}/v1/chat/completions",
+                    json={
+                        "model": ollama_model,
+                        "messages": formatted_messages,
+                        "max_tokens": 1024,
+                    },
+                    timeout=settings.TIMEOUT_SECONDS,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    out_text = data["choices"][0]["message"]["content"]
+                    return {
+                        "content": [{"type": "text", "text": scrub(out_text).scrubbed_text}],
+                        "model": ollama_model,
+                    }
+        except Exception as ollama_err:
+            logger.warn("Ollama call failed, continuing to Anthropic/fallback", error=str(ollama_err))
+
     headers = {
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01",

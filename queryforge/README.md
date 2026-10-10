@@ -4,27 +4,36 @@
 QueryForge is a local, offline-first multi-tool research agent that integrates natural language querying with structured databases, files, and third-party SaaS APIs. Powered by the Google Agents SDK, it orchestrates complex workflows by executing specialized, narrow-scope tools in a dependency-aware sequence. The agent leverages a local Ollama instance for planning, execution validation, and high-fidelity output synthesis.
 
 ## 2. Architecture
+
+```mermaid
+graph TD
+    UQ["User Query<br/>(Natural Language)"] --> QFA["QueryForge Agent<br/>(Google Agents SDK Orchestrator)"]
+    QFA --> TR["Tool Registry<br/>(Dependency-Aware Router)"]
+    
+    subgraph Tools["Narrow Parameterized Tools"]
+        DB["DB Tools<br/>(SQLite: churn, MRR, LTV)"]
+        WEB["Web Tools<br/>(DuckDuckGo: benchmarks)"]
+        PDF["PDF Tools<br/>(PyMuPDF: doc summaries)"]
+        CHART["Chart Tools<br/>(Matplotlib: visualizations)"]
+        KB["KB Tools<br/>(Local Markdown Knowledge Base)"]
+    end
+
+    TR --> DB
+    TR --> WEB
+    TR --> PDF
+    TR --> CHART
+    TR --> KB
+
+    DB --> SYN["Ollama Synthesis<br/>(Local qwen2.5:7b)"]
+    WEB --> SYN
+    PDF --> SYN
+    CHART --> SYN
+    KB --> SYN
+
+    SYN --> RESP["AgentResponse<br/>(Markdown text, Key findings, Sources, Charts)"]
+    RESP --> UI["Web UI Dashboard & REST API"]
 ```
-User Query
-    │
-    ▼
-[QueryForgeAgent](file:///Users/simranjeetsingh/Downloads/AI_Projects/AndrejKarpathy_2026_FocusProjects/queryforge/src/agent/queryforge_agent.py)
-    │
-    ▼
-[ToolRegistry](file:///Users/simranjeetsingh/Downloads/AI_Projects/AndrejKarpathy_2026_FocusProjects/queryforge/src/agent/tool_registry.py) (Tool Router)
-    │
-    ├─► DB Tools (SQLite: churn, MRR, LTV metrics)
-    ├─► Web Tools (DuckDuckGo: industry benchmarks, search)
-    ├─► PDF Tools (PyMuPDF: summarization, parsing)
-    ├─► Chart Tools (Matplotlib: trends, comparisons, bar/pie charts)
-    └─► API Tools (Stripe billing/MRR, Local Markdown KB)
-    │
-    ▼
-Ollama Synthesis (LLM response formatting & key findings extraction)
-    │
-    ▼
-AgentResponse (Answer text, key findings list, sources, and chart file paths)
-```
+
 
 ## 3. Tool Design Philosophy
 * **Security & Injection Mitigation:** Narrow, parameterized tools isolate database and system execution from user input, preventing prompt injection attacks (such as raw SQL injection or directory traversal) that arise from exposing generic query executors.
