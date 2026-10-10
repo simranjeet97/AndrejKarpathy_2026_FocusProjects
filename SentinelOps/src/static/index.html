@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelOps — AI DevOps Incident Response Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #4f46e5;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --accent-indigo: #4f46e5;
+      --accent-indigo-light: #eef2ff;
+      --accent-cyan: #0284c7;
+      --accent-cyan-light: #e0f2fe;
+      --accent-emerald: #059669;
+      --accent-emerald-light: #ecfdf5;
+      --accent-amber: #d97706;
+      --accent-amber-light: #fffbeb;
+      --accent-rose: #e11d48;
+      --accent-rose-light: #fff1f2;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e11d48, #4f46e5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 17px;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-pill {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .status-pill.online {
+      background: var(--accent-emerald-light);
+      border-color: #a7f3d0;
+      color: var(--accent-emerald);
+    }
+
+    .status-pill.sre {
+      background: var(--accent-indigo-light);
+      border-color: #c7d2fe;
+      color: var(--accent-indigo);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1560px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+    }
+
+    /* 5-Stage Architecture Pipeline */
+    .pipeline-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pipeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .pipeline-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+
+    .pipeline-step {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .pipeline-step:hover {
+      background: var(--surface);
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .step-1 .step-badge { background: #e11d48; }
+    .step-2 .step-badge { background: #0284c7; }
+    .step-3 .step-badge { background: #6366f1; }
+    .step-4 .step-badge { background: #8b5cf6; }
+    .step-5 .step-badge { background: #059669; }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Quick Demo Bar */
+    .quick-samples-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-samples-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .sample-pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .sample-pill:hover {
+      background: var(--accent-indigo-light);
+      border-color: var(--accent-indigo);
+      color: var(--accent-indigo);
+      transform: translateY(-1px);
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      background: #ffffff;
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-textarea {
+      min-height: 95px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .btn-submit {
+      height: 44px;
+      background: linear-gradient(135deg, #e11d48, #4f46e5);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2);
+      transition: all 0.15s;
+      margin-top: 4px;
+    }
+
+    .btn-submit:hover {
+      background: #be123c;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Output Section Styles */
+    .diagnosis-box {
+      background: var(--accent-indigo-light);
+      border: 1px solid #c7d2fe;
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      font-size: 13.5px;
+      color: #312e81;
+      line-height: 1.55;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .metric-badge {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .metric-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .patch-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: #0f172a;
+      color: #38bdf8;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      overflow-x: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 220px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.25); }
+
+    .eval-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .badge-tag.pass { background: var(--accent-emerald-light); color: var(--accent-emerald); }
+    .badge-tag.warn { background: var(--accent-amber-light); color: var(--accent-amber); }
+    .badge-tag.fail { background: var(--accent-rose-light); color: var(--accent-rose); }
+
+    /* Archive Table */
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: #fafafa;
+      padding: 12px 18px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .service-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-indigo);
+    }
+
+    .btn-inspect {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-inspect:hover {
+      background: var(--accent-indigo-light);
+      border-color: var(--accent-indigo);
+      color: var(--accent-indigo);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-badge">SO</div>
+      <div>
+        <h1 class="brand-title">SentinelOps</h1>
+        <div class="brand-subtitle">Autonomous AI DevOps Incident Response & Remediation Agent</div>
+      </div>
+    </div>
+    <div class="status-group">
+      <div class="status-pill online" id="healthPill">
+        <div class="dot"></div>
+        <span id="healthText">Ollama Qwen 2.5 Active</span>
+      </div>
+      <div class="status-pill sre">
+        <span>SRE Multi-Agent Engine</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- 5-Stage Architecture Pipeline -->
+    <div class="pipeline-card">
+      <div class="pipeline-header">
+        <div class="pipeline-title">
+          <span>🛡️ 5-Stage DevOps Incident Response Architecture</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-dim); font-weight: 600;">
+          Telemetry Ingestion · Deep Metrics & Logs · Runbook RAG · Multi-Agent Synthesis · Eval & Audit Gate
+        </div>
+      </div>
+      <div class="pipeline-grid">
+        <div class="pipeline-step step-1">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">1</div>
+            <span style="font-size: 10px; font-weight: 700; color: #e11d48;">INGESTION</span>
+          </div>
+          <div class="step-title">Alert & Ingestion</div>
+          <div class="step-desc">Ingests P1/P2 alert triggers, Prometheus alarms, and stack trace payloads.</div>
+        </div>
+
+        <div class="pipeline-step step-2">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">2</div>
+            <span style="font-size: 10px; font-weight: 700; color: #0284c7;">PROBES</span>
+          </div>
+          <div class="step-title">Log & Metric Query</div>
+          <div class="step-desc">Queries time-series telemetry (CPU, RAM, P99 latency, 5xx rate, restarts).</div>
+        </div>
+
+        <div class="pipeline-step step-3">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">3</div>
+            <span style="font-size: 10px; font-weight: 700; color: #6366f1;">RAG</span>
+          </div>
+          <div class="step-title">Runbook Lookup</div>
+          <div class="step-desc">Matches incident symptoms against institutional SRE operational runbooks.</div>
+        </div>
+
+        <div class="pipeline-step step-4">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">4</div>
+            <span style="font-size: 10px; font-weight: 700; color: #8b5cf6;">AGENTS</span>
+          </div>
+          <div class="step-title">Multi-Agent Loop</div>
+          <div class="step-desc">Ollama Qwen2.5 7B synthesizes exact executable kubectl/bash/SQL patch.</div>
+        </div>
+
+        <div class="pipeline-step step-5">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">5</div>
+            <span style="font-size: 10px; font-weight: 700; color: #059669;">SAFETY</span>
+          </div>
+          <div class="step-title">Eval & Audit Chain</div>
+          <div class="step-desc">Evaluates risk, asserts confidence &ge; 85%, and seals SHA-256 audit block.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1-Click Quick Demo Presets Bar -->
+    <div class="quick-samples-bar">
+      <div class="quick-samples-label">⚡ Quick Demo Samples:</div>
+      <button class="sample-pill" onclick="loadPreset('payment-service-v2', 'P1', 'Kubernetes Pod CrashLoopBackOff & OOMKilled at 4.28GB', 'Container exits with code 137. Memory peaked at 4.28GB over 4.0GB limit with 14 restarts in 60m.')">
+        💥 K8s Pod OOMKilled (4.28GB / 4.0GB Limit)
+      </button>
+      <button class="sample-pill" onclick="loadPreset('rds-core-db', 'P1', 'PostgreSQL Connection Pool Starvation (Active: 500/500)', 'Inbound checkout transactions timing out. PgBouncer pool reached 500/500 ceiling with 182 waiting threads.')">
+        🐘 PostgreSQL Pool Starvation (500/500 Conns)
+      </button>
+      <button class="sample-pill" onclick="loadPreset('api-gateway-proxy', 'P1', '502 Bad Gateway Error Spike (18.4% HTTP 5xx Rate)', 'Envoy and Ingress mesh reporting upstream connect timeouts after traffic burst.')">
+        🚨 502 Gateway Error Spike (18.4% 5xx Rate)
+      </button>
+      <button class="sample-pill" onclick="loadPreset('cache-cluster-01', 'P2', 'Redis Memory Saturation (98.7% MaxMemory, 4210 Evictions/Sec)', 'Used memory hit 15.8GB / 16.0GB limit, triggering mass key evictions and database storm.')">
+        ⚡ Redis MaxMemory Spike (4,210 Evictions/Sec)
+      </button>
+      <button class="sample-pill" onclick="loadPreset('auth-dns-resolver', 'P2', 'CoreDNS Resolution Degradation (SERVFAIL at 22.8%)', 'Worker node conntrack saturation dropping UDP port 53 packets, causing SERVFAIL lookup timeouts.')">
+        🌐 CoreDNS Packet Drop (SERVFAIL 22.8%)
+      </button>
+    </div>
+
+    <!-- Main Grid: Input Console (Left) + Output Console (Right) -->
+    <div class="main-grid">
+
+      <!-- Left Column: Incident Submission Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🚨 Trigger DevOps Incident</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-dim); font-weight: 600;">Automated SRE Response</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Impacted Service Name</label>
+            <input type="text" id="incService" class="form-input" placeholder="e.g. payment-service-v2" value="payment-service-v2">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alert Severity Level</label>
+            <select id="incSeverity" class="form-select">
+              <option value="P1">P1 — Critical Outage (Customer Facing)</option>
+              <option value="P2">P2 — Major Degradation (High Latency / Capacity)</option>
+              <option value="P3">P3 — Moderate Warning (Non-blocking)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Incident Title</label>
+            <input type="text" id="incTitle" class="form-input" placeholder="e.g. Pod CrashLoopBackOff & Exit Code 137" value="Kubernetes Pod CrashLoopBackOff & OOMKilled at 4.28GB">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Symptom Description & Stack Traces</label>
+            <textarea id="incDesc" class="form-textarea" placeholder="Paste symptoms, alerts, or error logs...">Container exits with code 137. Memory peaked at 4.28GB over 4.0GB limit with 14 restarts in 60m.</textarea>
+          </div>
+          <button id="runBtn" class="btn-submit" onclick="submitIncident()">
+            <span>⚡ Investigate & Remediate Incident</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: Live Output & Remediation Patch -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🔍 Root Cause Diagnosis & Executable Patch</span>
+          </div>
+          <span id="outputStatus" style="font-size: 11.5px; font-weight: 700; color: #059669;">● System Healthy</span>
+        </div>
+        <div class="card-body" style="gap: 14px;">
+
+          <!-- Root Cause Summary Box -->
+          <div class="diagnosis-box" id="diagnosisBox">
+            Select a quick demo sample or trigger an incident to view automated root cause diagnosis, telemetry telemetry, and executable patch.
+          </div>
+
+          <!-- Correlated Telemetry Metrics -->
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+              Correlated Telemetry Probes:
+            </div>
+            <div class="metrics-row" id="metricsDeck">
+              <div class="metric-badge">
+                <span class="metric-name">CPU Utilization</span>
+                <span class="metric-val" id="metricCpu">74.2%</span>
+              </div>
+              <div class="metric-badge">
+                <span class="metric-name">Memory Saturation</span>
+                <span class="metric-val" id="metricMem">107.0%</span>
+              </div>
+              <div class="metric-badge">
+                <span class="metric-name">P99 Latency</span>
+                <span class="metric-val" id="metricLatency">320ms</span>
+              </div>
+              <div class="metric-badge">
+                <span class="metric-name">Restarts (1h)</span>
+                <span class="metric-val" id="metricRestarts" style="color: #e11d48;">14</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Executable Remediation Script -->
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+              Synthesized Remediation Script (Kubectl / SQL / Shell):
+            </div>
+            <div class="patch-box" id="patchBox">
+              <button class="copy-btn" onclick="copyPatch()">Copy Patch</button>
+              <span id="patchContent"># No remediation synthesized yet</span>
+            </div>
+          </div>
+
+          <!-- Safety Eval & Cryptographic Hash -->
+          <div class="eval-row">
+            <div>
+              <span style="font-weight: 600;">Safety Eval:</span>
+              <span class="badge-tag pass" id="evalBadge">Confidence: 96.0% (PASSED)</span>
+              <span class="badge-tag pass" id="riskBadge" style="margin-left: 6px;">Risk: LOW</span>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);" id="hashDisplay">
+              SHA-256: Genesis Block Active
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Section: Incident History Archive -->
+    <div class="table-container">
+      <div class="card-header" style="background: #ffffff;">
+        <div class="card-title">
+          <span>📚 Incident Response Archive & Postmortem Ledger</span>
+        </div>
+        <button onclick="loadIncidents()" style="background: none; border: none; color: var(--accent-indigo); font-size: 12px; font-weight: 600; cursor: pointer;">
+          Refresh Archive
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Inc #</th>
+            <th>Service</th>
+            <th>Severity</th>
+            <th>Incident Title</th>
+            <th>Confidence</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="incidentTableBody">
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">Loading incidents...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    let incidentsData = [];
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        const text = document.getElementById('healthText');
+        if (data.status === 'healthy' || data.database) {
+          text.textContent = 'Ollama Qwen 2.5 Active (Healthy)';
+        }
+      } catch (err) {
+        console.error('Health check error:', err);
+      }
+    }
+
+    function loadPreset(service, severity, title, desc) {
+      document.getElementById('incService').value = service;
+      document.getElementById('incSeverity').value = severity;
+      document.getElementById('incTitle').value = title;
+      document.getElementById('incDesc').value = desc;
+
+      const match = incidentsData.find(i => i.service === service || i.title.includes(title.substring(0, 20)));
+      if (match) displayIncident(match);
+    }
+
+    async function loadIncidents() {
+      try {
+        const res = await fetch('/api/incidents');
+        const data = await res.json();
+        incidentsData = data.incidents || [];
+        renderTable(incidentsData);
+
+        if (incidentsData.length > 0 && document.getElementById('patchContent').textContent.includes('No remediation')) {
+          displayIncident(incidentsData[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load incidents:', err);
+      }
+    }
+
+    function renderTable(incidents) {
+      const tbody = document.getElementById('incidentTableBody');
+      if (incidents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 20px;">No incidents recorded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = incidents.map(inc => `
+        <tr>
+          <td style="font-weight: 700; color: var(--text-muted);">#${inc.incident_number || 101}</td>
+          <td><span class="service-tag">${escapeHtml(inc.service)}</span></td>
+          <td>
+            <span class="badge-tag ${inc.severity === 'P1' ? 'fail' : 'warn'}">${escapeHtml(inc.severity)}</span>
+          </td>
+          <td style="font-weight: 500;">${escapeHtml(inc.title)}</td>
+          <td><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #059669;">${((inc.confidence_score || 0.9) * 100).toFixed(1)}%</span></td>
+          <td><span class="badge-tag pass">● ${escapeHtml(inc.status || 'RESOLVED')}</span></td>
+          <td style="color: var(--text-dim); font-size: 11.5px;">${inc.created_at ? inc.created_at.substring(0, 16).replace('T', ' ') : 'Just now'}</td>
+          <td>
+            <button class="btn-inspect" onclick='inspectIncident("${escapeHtml(inc.id)}")'>Inspect SRE Plan</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function inspectIncident(id) {
+      const match = incidentsData.find(i => i.id === id);
+      if (match) displayIncident(match);
+    }
+
+    function displayIncident(inc) {
+      document.getElementById('diagnosisBox').innerHTML = `
+        <strong>${escapeHtml(inc.service)} — ${escapeHtml(inc.title)}</strong><br>
+        <span style="font-size: 12.5px; color: #3730a3; margin-top: 6px; display: inline-block;">
+          ${escapeHtml(inc.root_cause || 'Root cause analyzed and remediation verified.')}
+        </span>
+      `;
+
+      document.getElementById('patchContent').textContent = inc.remediation_patch || '# No patch specified';
+
+      const confPct = ((inc.confidence_score || 0.94) * 100).toFixed(1);
+      document.getElementById('evalBadge').textContent = `Confidence: ${confPct}% (${inc.eval_passed ? 'PASSED' : 'ESCALATED'})`;
+      document.getElementById('riskBadge').textContent = `Risk: ${escapeHtml(inc.risk_level || 'LOW')}`;
+
+      if (inc.audit_hash) {
+        document.getElementById('hashDisplay').textContent = `SHA-256: ${inc.audit_hash.substring(0, 16)}...${inc.audit_hash.substring(inc.audit_hash.length - 8)}`;
+      }
+
+      document.getElementById('outputStatus').textContent = `● Resolved (#${inc.incident_number || 101})`;
+    }
+
+    async function submitIncident() {
+      const service = document.getElementById('incService').value.trim();
+      const severity = document.getElementById('incSeverity').value;
+      const title = document.getElementById('incTitle').value.trim();
+      const desc = document.getElementById('incDesc').value.trim();
+
+      if (!service || !title) {
+        alert('Please provide a service name and incident title.');
+        return;
+      }
+
+      const btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Coordinating SRE Multi-Agent Response...';
+
+      try {
+        const res = await fetch('/api/incidents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ service, severity, title, description: desc })
+        });
+
+        if (!res.ok) throw new Error('Failed to process incident');
+        const data = await res.json();
+
+        displayIncident(data);
+
+        // Update telemetry cards from response
+        if (data.metrics) {
+          if (data.metrics.cpu_utilization_pct !== undefined) document.getElementById('metricCpu').textContent = data.metrics.cpu_utilization_pct + '%';
+          if (data.metrics.memory_saturation_pct !== undefined) document.getElementById('metricMem').textContent = data.metrics.memory_saturation_pct + '%';
+          if (data.metrics.p99_latency_ms !== undefined) document.getElementById('metricLatency').textContent = data.metrics.p99_latency_ms + 'ms';
+          if (data.metrics.pod_restarts_last_hour !== undefined) document.getElementById('metricRestarts').textContent = data.metrics.pod_restarts_last_hour;
+          else if (data.metrics.active_connections !== undefined) document.getElementById('metricRestarts').textContent = data.metrics.active_connections + ' conns';
+        }
+
+        await loadIncidents();
+
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Investigate & Remediate Incident</span>';
+      }
+    }
+
+    function copyPatch() {
+      const text = document.getElementById('patchContent').textContent;
+      navigator.clipboard.writeText(text);
+      alert('Remediation patch copied to clipboard!');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    checkHealth();
+    loadIncidents();
+  </script>
+</body>
+</html>

@@ -151,14 +151,56 @@ class QueryForgeAgent:
                 elif isinstance(out.result, dict) and "filepath" in out.result:
                     chart_paths.append(str(out.result["filepath"]))
 
+        # Auto-visualization fallback: If data was retrieved but no chart was created, auto-generate one
+        if not chart_paths:
+            for out in list(tool_outputs):
+                if out.success and out.result:
+                    if out.tool_name == "get_mrr_by_segment":
+                        try:
+                            c_out = await self._execute_tool("generate_revenue_chart", {"revenue_data": out.result, "caller_context": user_query})
+                            if c_out.success and c_out.result and hasattr(c_out.result, "filepath"):
+                                chart_paths.append(str(c_out.result.filepath))
+                                tool_calls.append(ToolCall(input=ToolInput(tool_name="generate_revenue_chart", arguments={"revenue_data": out.result}, caller_context="Auto-visualization"), output=c_out, timestamp=datetime.utcnow()))
+                                tool_outputs.append(c_out)
+                                break
+                        except Exception as e:
+                            logger.warning(f"Auto-revenue-chart generation failed: {e}")
+                    elif out.tool_name in ["get_monthly_churn_by_segment", "get_top_churned_segments"]:
+                        try:
+                            c_out = await self._execute_tool("generate_churn_chart", {"segments": out.result, "title": "Customer Churn Analysis", "caller_context": user_query})
+                            if c_out.success and c_out.result and hasattr(c_out.result, "filepath"):
+                                chart_paths.append(str(c_out.result.filepath))
+                                tool_calls.append(ToolCall(input=ToolInput(tool_name="generate_churn_chart", arguments={"segments": out.result}, caller_context="Auto-visualization"), output=c_out, timestamp=datetime.utcnow()))
+                                tool_outputs.append(c_out)
+                                break
+                        except Exception as e:
+                            logger.warning(f"Auto-churn-chart generation failed: {e}")
+                    elif out.tool_name == "get_customer_count_by_segment":
+                        try:
+                            c_out = await self._execute_tool("generate_generic_chart", {"data": out.result, "title": "Customer Count by Segment", "caller_context": user_query})
+                            if c_out.success and c_out.result and hasattr(c_out.result, "filepath"):
+                                chart_paths.append(str(c_out.result.filepath))
+                                tool_calls.append(ToolCall(input=ToolInput(tool_name="generate_generic_chart", arguments={"data": out.result}, caller_context="Auto-visualization"), output=c_out, timestamp=datetime.utcnow()))
+                                tool_outputs.append(c_out)
+                                break
+                        except Exception as e:
+                            logger.warning(f"Auto-generic-chart generation failed: {e}")
+
         # Synthesize final response
         synthesis = await self._synthesize_response(user_query, tool_outputs)
+        raw_answer = synthesis.get("answer", "Failed to generate synthesis response.")
+
+        # Strip any hallucinated dummy markdown image placeholders like ![](path/to/...)
+        import re
+        clean_answer = re.sub(r'!\[.*?\]\(path/to/.*?\)', '', raw_answer)
+        clean_answer = re.sub(r'!\[.*?\]\([a-zA-Z0-9_\-/]*chart[a-zA-Z0-9_\-/]*\.(png|jpg|jpeg)\)', '', clean_answer)
+        clean_answer = clean_answer.strip()
         
         total_latency_ms = int((time.time() - start_agent_time) * 1000)
 
         agent_response = AgentResponse(
             query=user_query,
-            answer=synthesis.get("answer", "Failed to generate synthesis response."),
+            answer=clean_answer,
             tool_calls=tool_calls,
             sources=synthesis.get("sources", []),
             chart_paths=chart_paths,
@@ -410,8 +452,8 @@ class QueryForgeAgent:
             "Available Tools:\n"
             f"{tools_str}\n\n"
             "Rules:\n"
-            "1. Use the minimum number of tools necessary.\n"
-            "2. Prefer specific-purpose tools over generic ones.\n"
+            "1. Use the minimum number of tools necessary to answer accurately.\n"
+            "2. When the user asks for reports, breakdowns, trends, or comparisons (such as MRR by segment or churn rate), pair the data retrieval tool with the corresponding chart generation tool (e.g. generate_revenue_chart, generate_churn_chart, generate_generic_chart) to provide visual analytics.\n"
             "3. Output ONLY a valid JSON object matching the schema below. No conversational text.\n\n"
             "Schema:\n"
             "{\n"
@@ -470,8 +512,7 @@ class QueryForgeAgent:
             "1. Provide a comprehensive summary answering the query.\n"
             "2. List key findings.\n"
             "3. Cite data sources (e.g. database table names, source URLs, etc.).\n"
-            "4. If any tool output represents a generated chart file (containing filepath and title), "
-            "reference the chart file and its path in your answer.\n"
+            "4. If a tool output generated a chart file (containing filepath and title), reference the chart title and explain what it depicts. NEVER output dummy markdown image tags like ![](path/to/...). The system renders charts automatically.\n"
             "5. Output ONLY a valid JSON object matching the schema below. No conversational text outside JSON.\n\n"
             "Schema:\n"
             "{\n"

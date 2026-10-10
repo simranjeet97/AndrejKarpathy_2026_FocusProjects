@@ -152,6 +152,76 @@ async def get_circuit_breakers(request: Request) -> Dict[str, Any]:
         name = key.replace("cb:", "")
         val = await redis_client.get(key)
         if val:
-            breakers[name] = json.loads(val)
+            try:
+                breakers[name] = json.loads(val)
+            except Exception:
+                pass
             
+    # Include default known services if not tripped yet
+    for svc in ["stripe_refund", "llm:claude-sonnet-4-6", "llm:claude-haiku-4-5-20251001"]:
+        if svc not in breakers:
+            breakers[svc] = {"state": "CLOSED", "failures": [], "last_state_change": time.time()}
+
     return {"circuit_breakers": breakers}
+
+
+@router.post("/circuit-breakers/{service_name}/trip")
+async def trip_circuit_breaker(service_name: str, request: Request) -> Dict[str, Any]:
+    """Trip a circuit breaker manually for fault-injection simulation."""
+    redis_client = getattr(request.app.state, "redis_client", None)
+    if not redis_client:
+        return {"error": "Redis client not initialized"}
+    cb = CircuitBreaker(redis_client, service_name)
+    data = await cb._get_state_data()
+    data["state"] = CircuitState.OPEN.value
+    data["last_state_change"] = time.time()
+    await cb._save_state_data(data)
+    return {"status": "success", "service": service_name, "state": "OPEN"}
+
+
+@router.post("/circuit-breakers/{service_name}/reset")
+async def reset_circuit_breaker(service_name: str, request: Request) -> Dict[str, Any]:
+    """Reset a circuit breaker back to CLOSED state."""
+    redis_client = getattr(request.app.state, "redis_client", None)
+    if not redis_client:
+        return {"error": "Redis client not initialized"}
+    cb = CircuitBreaker(redis_client, service_name)
+    data = await cb._get_state_data()
+    data["state"] = CircuitState.CLOSED.value
+    data["failures"] = []
+    data["last_state_change"] = time.time()
+    await cb._save_state_data(data)
+    return {"status": "success", "service": service_name, "state": "CLOSED"}
+
+
+@router.get("/audit-events")
+async def get_all_audit_events(request: Request) -> Dict[str, Any]:
+    """Retrieve recent cryptographic audit log events."""
+    db_pool = getattr(request.app.state, "db_pool", None)
+    if not db_pool:
+        return {"events": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, conversation_id, event_type, actor, payload, hash, created_at FROM audit_events ORDER BY created_at DESC LIMIT 50"
+        )
+    events = []
+    for r in rows:
+        payload_data = r["payload"]
+        if isinstance(payload_data, str):
+            try:
+                payload_dict = json.loads(payload_data)
+            except Exception:
+                payload_dict = {"raw": payload_data}
+        else:
+            payload_dict = payload_data
+        created = r["created_at"].isoformat() if hasattr(r["created_at"], "isoformat") else str(r["created_at"])
+        events.append({
+            "id": r["id"],
+            "conversation_id": r["conversation_id"],
+            "event_type": r["event_type"],
+            "actor": r["actor"],
+            "payload": payload_dict,
+            "hash": r["hash"],
+            "created_at": created,
+        })
+    return {"events": events}

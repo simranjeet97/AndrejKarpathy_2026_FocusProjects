@@ -1,9 +1,66 @@
-# System files
-.DS_Store
+# ============================================================
+# Andrej Karpathy 2026 Focus Projects — .gitignore
+# ============================================================
 
-# CodeLensAI local settings & files
-CodeLensAI/.env
-CodeLensAI/.venv/
-CodeLensAI/.pytest_cache/
-CodeLensAI/codelens_ai.egg-info/
-CodeLensAI/data/
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ── Virtual Environments ────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment Variables / Secrets ─────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── SQLite Databases (runtime-generated) ────────────────────
+*.db
+*.db-journal
+*.sqlite3
+
+# ── Test / Cache ────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# ── IDE & Editor ────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS Artifacts ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ── Runtime Data & Logs ─────────────────────────────────────
+data/
+results/
+logs/
+*.log
+
+# ── Node (if any JS tooling is added later) ─────────────────
+node_modules/
+package-lock.json
+
+# ── Miscellaneous ───────────────────────────────────────────
+*.bak
+*.tmp
+*.temp

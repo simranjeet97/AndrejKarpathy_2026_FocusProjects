@@ -1,0 +1,86 @@
+[
+  {
+    "id": "RB-101",
+    "title": "Kubernetes Pod OOMKilled & Memory Saturation",
+    "service_match": ["k8s", "pod", "payment-service", "crashloop", "oomkilled", "memory"],
+    "symptoms": "Container exits with code 137 (OOMKilled). Restart count continuously increments. RSS memory hits 100% of limits.memory.",
+    "diagnostic_steps": [
+      "Check pod status via kubectl describe pod -n production",
+      "Inspect termination reason for exit code 137 / OOMKilled",
+      "Correlate heap dump memory leak vs traffic surge spike"
+    ],
+    "remediation": "kubectl patch deployment payment-service-v2 -n production --patch '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"app\",\"resources\":{\"limits\":{\"memory\":\"6Gi\"},\"requests\":{\"memory\":\"4Gi\"}}}]}}}}'",
+    "risk_level": "LOW",
+    "confidence_baseline": 0.96
+  },
+  {
+    "id": "RB-102",
+    "title": "PostgreSQL Connection Pool Starvation & Thread Exhaustion",
+    "service_match": ["postgres", "database", "rds", "pool", "conns", "starvation", "pgbouncer"],
+    "symptoms": "Backend services report FATAL: remaining connection slots are reserved for non-replication superuser connections. P99 latency spikes above 4000ms.",
+    "diagnostic_steps": [
+      "Query pg_stat_activity for idle-in-transaction connections > 60s",
+      "Check active vs max_connections allocation in PgBouncer pool",
+      "Kill orphan lingering transactions holding shared locks"
+    ],
+    "remediation": "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle in transaction' AND state_change < now() - INTERVAL '60 seconds';\npd-admin pool-resize --service rds-core-db --pool-size 750 --idle-timeout 30s",
+    "risk_level": "MEDIUM",
+    "confidence_baseline": 0.94
+  },
+  {
+    "id": "RB-103",
+    "title": "API Gateway / Ingress 502 Bad Gateway Error Spike",
+    "service_match": ["api-gateway", "ingress", "nginx", "502", "504", "upstream", "timeout"],
+    "symptoms": "External client traffic encounters 18%+ 502/504 errors. Envoy / Nginx ingress logs upstream connect timeout.",
+    "diagnostic_steps": [
+      "Verify healthy backend endpoints in TargetGroup / K8s Endpoints",
+      "Check connection keepalive and idle socket timeouts",
+      "Verify CPU throttling on upstream microservice pods"
+    ],
+    "remediation": "kubectl scale deployment api-gateway-proxy -n ingress --replicas=8;\nkubectl rollout restart deployment routing-mesh -n ingress",
+    "risk_level": "LOW",
+    "confidence_baseline": 0.95
+  },
+  {
+    "id": "RB-104",
+    "title": "Redis Cache MaxMemory Saturation & Eviction Cascade",
+    "service_match": ["redis", "cache", "eviction", "maxmemory", "stampede"],
+    "symptoms": "Redis memory reaches 98.7% of maxmemory. Evicted keys rate spikes to >4000/sec, degrading primary database with un-cached queries.",
+    "diagnostic_steps": [
+      "Run redis-cli INFO memory and evaluate used_memory_peak_human",
+      "Audit top volatile keys with BIGKEYS command",
+      "Verify maxmemory-policy is set to allkeys-lru or volatile-ttl"
+    ],
+    "remediation": "redis-cli -h cache-cluster-01 -p 6379 CONFIG SET maxmemory-policy volatile-lru;\nredis-cli -h cache-cluster-01 -p 6379 MEMORY PURGE",
+    "risk_level": "LOW",
+    "confidence_baseline": 0.93
+  },
+  {
+    "id": "RB-105",
+    "title": "CoreDNS Resolution Degradation & UDP Packet Drop",
+    "service_match": ["dns", "coredns", "kube-dns", "resolution", "udp", "packet"],
+    "symptoms": "Internal service discovery lookups timeout (>5000ms). Pods fail to resolve postgres.internal.net with SERVFAIL.",
+    "diagnostic_steps": [
+      "Inspect CoreDNS pod metrics: coredns_dns_request_duration_seconds",
+      "Verify conntrack table saturation on worker nodes",
+      "Deploy NodeLocal DNSCache daemonset to offload UDP traffic"
+    ],
+    "remediation": "kubectl scale deployment coredns -n kube-system --replicas=6;\nsysctl -w net.netfilter.nf_conntrack_max=1048576",
+    "risk_level": "MEDIUM",
+    "confidence_baseline": 0.91
+  },
+  {
+    "id": "RB-106",
+    "title": "Worker Node Disk Inode & Ephemeral Volume Exhaustion",
+    "service_match": ["disk", "inode", "volume", "storage", "full", "ephemeral"],
+    "symptoms": "K8s node status reports DiskPressure. Docker/containerd fails to create sandbox overlays with 'no space left on device'.",
+    "diagnostic_steps": [
+      "Run df -h and df -i on affected worker nodes",
+      "Inspect dangling unused docker images and defunct container logs",
+      "Trigger safe kubelet garbage collection"
+    ],
+    "remediation": "crictl rmi --prune;\njournalctl --vacuum-time=1d;\nkubectl cordon node-prod-worker-08 && kubectl drain node-prod-worker-08 --ignore-daemonsets --delete-emptydir-data",
+    "risk_level": "HIGH",
+    "confidence_baseline": 0.88
+  }
+]

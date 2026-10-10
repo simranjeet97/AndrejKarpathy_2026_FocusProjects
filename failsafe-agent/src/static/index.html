@@ -9,445 +9,866 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(16, 22, 36, 0.75);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-glow: rgba(99, 102, 241, 0.35);
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
-      --accent-indigo: #6366f1;
-      --accent-cyan: #06b6d4;
-      --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
-      --glass: blur(16px);
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #6366f1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --accent-indigo: #4f46e5;
+      --accent-indigo-light: #eef2ff;
+      --accent-cyan: #0284c7;
+      --accent-cyan-light: #e0f2fe;
+      --accent-emerald: #059669;
+      --accent-emerald-light: #ecfdf5;
+      --accent-amber: #d97706;
+      --accent-amber-light: #fffbeb;
+      --accent-rose: #e11d48;
+      --accent-rose-light: #fff1f2;
       --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: 
-        radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 85%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
+      line-height: 1.5;
     }
+
+    /* Header */
     header {
-      padding: 16px 36px;
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
+      padding: 16px 36px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(9, 13, 22, 0.85);
-      backdrop-filter: var(--glass);
       position: sticky;
       top: 0;
       z-index: 50;
+      box-shadow: var(--shadow-sm);
     }
+
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
+
     .badge-icon {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent-rose), var(--accent-indigo));
+      background: linear-gradient(135deg, #4f46e5, #0284c7);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
       font-size: 16px;
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
     }
-    .brand h1 {
+
+    .brand-title {
       font-size: 18px;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
     }
-    .brand span {
+
+    .brand-subtitle {
       font-size: 12px;
-      color: var(--text-dim);
-      margin-left: 6px;
+      color: var(--text-muted);
+      font-weight: 500;
     }
+
     .status-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
+
     .status-pill {
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 999px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: var(--surface);
+      border: 1px solid var(--border);
       font-size: 12px;
-      color: var(--accent-emerald);
+      font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-weight: 500;
+      gap: 7px;
+      box-shadow: var(--shadow-sm);
     }
+
+    .status-pill.online {
+      background: var(--accent-emerald-light);
+      border-color: #a7f3d0;
+      color: var(--accent-emerald);
+    }
+
+    .status-pill.circuit {
+      background: var(--accent-indigo-light);
+      border-color: #c7d2fe;
+      color: var(--accent-indigo);
+    }
+
     .dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: var(--accent-emerald);
-      box-shadow: 0 0 8px var(--accent-emerald);
+      background: currentColor;
     }
-    .layout {
+
+    /* Container */
+    .container {
       max-width: 1560px;
       width: 100%;
       margin: 0 auto;
-      padding: 24px 36px;
-      display: grid;
-      grid-template-columns: 1fr 440px;
-      gap: 24px;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
       flex: 1;
     }
-    .chat-panel {
-      background: var(--card-bg);
+
+    /* 5-Stage Architecture Pipeline Banner */
+    .pipeline-card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      backdrop-filter: var(--glass);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pipeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .pipeline-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      position: relative;
+    }
+
+    .pipeline-step {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .pipeline-step:hover {
+      background: var(--surface);
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pipeline-step.active {
+      border-color: var(--accent-indigo);
+      background: var(--accent-indigo-light);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #64748b;
+    }
+
+    .step-1 .step-badge { background: #0284c7; }
+    .step-2 .step-badge { background: #6366f1; }
+    .step-3 .step-badge { background: #8b5cf6; }
+    .step-4 .step-badge { background: #f59e0b; }
+    .step-5 .step-badge { background: #10b981; }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Quick Demo Bar */
+    .quick-samples-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-samples-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .sample-pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .sample-pill:hover {
+      background: var(--accent-indigo-light);
+      border-color: var(--accent-indigo);
+      color: var(--accent-indigo);
+      transform: translateY(-1px);
+    }
+
+    .sample-pill.trip-btn {
+      background: var(--accent-rose-light);
+      border-color: #fecdd3;
+      color: var(--accent-rose);
+    }
+
+    .sample-pill.trip-btn:hover {
+      background: #ffe4e6;
+      border-color: var(--accent-rose);
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 20px;
+      flex: 1;
+    }
+
+    /* Chat Panel */
+    .chat-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      height: calc(100vh - 120px);
+      height: 640px;
+      box-shadow: var(--shadow-sm);
     }
+
     .chat-header {
       padding: 16px 22px;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: #fafafa;
     }
+
     .customer-selector {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
     }
+
     .customer-select {
-      background: rgba(9, 13, 22, 0.8);
+      background: var(--surface);
       border: 1px solid var(--border);
-      color: var(--text);
-      padding: 4px 10px;
-      border-radius: 6px;
+      color: var(--text-main);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
+      font-weight: 600;
       outline: none;
+      cursor: pointer;
     }
+
+    .clear-chat-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .clear-chat-btn:hover {
+      background: var(--bg);
+      color: var(--accent-rose);
+      border-color: #fecdd3;
+    }
+
     .messages-container {
       flex: 1;
-      padding: 24px;
+      padding: 22px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      background: #ffffff;
     }
+
     .message-row {
       display: flex;
       flex-direction: column;
-      max-width: 80%;
+      max-width: 82%;
     }
+
     .message-row.user {
       align-self: flex-end;
       align-items: flex-end;
     }
+
     .message-row.assistant {
       align-self: flex-start;
       align-items: flex-start;
     }
+
     .msg-bubble {
       padding: 14px 18px;
       border-radius: var(--radius-md);
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 13.5px;
+      line-height: 1.55;
+      box-shadow: var(--shadow-sm);
     }
+
     .user .msg-bubble {
-      background: linear-gradient(135deg, var(--accent-indigo), #4f46e5);
-      color: #fff;
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      color: #ffffff;
       border-bottom-right-radius: 4px;
     }
+
     .assistant .msg-bubble {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--surface-subtle);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--text-main);
       border-bottom-left-radius: 4px;
     }
+
     .msg-meta {
       font-size: 11px;
       color: var(--text-dim);
-      margin-top: 4px;
+      margin-top: 5px;
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-    .quick-prompts {
-      padding: 10px 20px;
-      display: flex;
       gap: 8px;
-      overflow-x: auto;
-      border-top: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.01);
     }
-    .quick-btn {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-    }
-    .quick-btn:hover {
-      border-color: var(--accent-indigo);
-      color: #fff;
-    }
+
     .input-bar {
-      padding: 16px 20px;
+      padding: 14px 20px;
       border-top: 1px solid var(--border);
       display: flex;
       gap: 10px;
-      background: rgba(9, 13, 22, 0.6);
+      background: #ffffff;
     }
+
     .chat-input {
       flex: 1;
-      height: 44px;
-      background: rgba(16, 22, 36, 0.9);
+      height: 46px;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 0 16px;
-      color: #fff;
+      color: var(--text-main);
       font-size: 14px;
       outline: none;
       font-family: inherit;
+      transition: border-color 0.15s;
     }
+
     .chat-input:focus {
       border-color: var(--accent-indigo);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
     }
+
     .btn-send {
-      height: 44px;
-      padding: 0 20px;
-      background: linear-gradient(135deg, var(--accent-indigo), #4f46e5);
-      color: #fff;
+      height: 46px;
+      padding: 0 22px;
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      color: #ffffff;
       border: none;
       border-radius: var(--radius-md);
       font-weight: 600;
-      font-size: 13px;
+      font-size: 13.5px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+      transition: all 0.15s;
     }
-    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-send:hover {
+      background: #4338ca;
+      transform: translateY(-1px);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     /* Telemetry Deck */
     .telemetry-deck {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      height: calc(100vh - 120px);
+      gap: 18px;
+      height: 640px;
       overflow-y: auto;
     }
+
     .telemetry-card {
-      background: var(--card-bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      backdrop-filter: var(--glass);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       padding: 18px 20px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      box-shadow: var(--shadow-sm);
     }
+
     .card-title {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
+
     .pii-box {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      background: rgba(0, 0, 0, 0.35);
+      font-size: 11.5px;
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      color: #38bdf8;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: #0369a1;
       max-height: 90px;
       overflow-y: auto;
+      line-height: 1.5;
     }
-    .guardrail-row {
+
+    .pii-box mark {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Circuit Breakers Table */
+    .cb-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 0;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
       font-size: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-    .badge-tag {
+
+    .cb-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .cb-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-trip-small {
       font-size: 10px;
       font-weight: 600;
-      padding: 2px 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #fecdd3;
+      background: var(--accent-rose-light);
+      color: var(--accent-rose);
+      cursor: pointer;
+    }
+
+    .btn-trip-small:hover {
+      background: #ffe4e6;
+    }
+
+    .btn-reset-small {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #a7f3d0;
+      background: var(--accent-emerald-light);
+      color: var(--accent-emerald);
+      cursor: pointer;
+    }
+
+    .btn-reset-small:hover {
+      background: #d1fae5;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
       border-radius: 4px;
     }
-    .badge-tag.pass { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); }
-    .badge-tag.warn { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+
+    .badge-tag.pass { background: var(--accent-emerald-light); color: var(--accent-emerald); }
+    .badge-tag.warn { background: var(--accent-amber-light); color: var(--accent-amber); }
+    .badge-tag.fail { background: var(--accent-rose-light); color: var(--accent-rose); }
+
+    /* Audit Chain Deck */
     .audit-chain {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 180px;
+      max-height: 220px;
       overflow-y: auto;
     }
+
     .audit-event {
-      padding: 8px 10px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.02);
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: var(--bg);
       border: 1px solid var(--border);
       font-size: 11px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
+
     .audit-event-type {
-      font-weight: 600;
+      font-weight: 700;
       color: var(--accent-indigo);
+      display: flex;
+      justify-content: space-between;
     }
+
     .audit-hash {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
+      font-size: 10.5px;
+      color: #64748b;
       word-break: break-all;
     }
+
     .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
       border-radius: 50%;
-      border-top-color: #fff;
+      border-top-color: #ffffff;
       animation: spin 0.8s linear infinite;
     }
+
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+
+  <!-- Top Brand Navigation -->
   <header>
     <div class="brand">
       <div class="badge-icon">FS</div>
       <div>
-        <h1>Failsafe Agent</h1>
+        <h1 class="brand-title">Failsafe Agent</h1>
+        <div class="brand-subtitle">Resilient Stripe & Customer Refund Intelligence with Zero PII Leakage</div>
       </div>
-      <span>Resilient Stripe & Policy Support</span>
     </div>
     <div class="status-group">
-      <div class="status-pill" id="healthPill">
+      <div class="status-pill online" id="healthPill">
         <div class="dot"></div>
-        <span id="healthText">Ollama Qwen Active</span>
+        <span id="healthText">Ollama Qwen 2.5 Active</span>
       </div>
-      <div class="status-pill" style="border-color: rgba(99, 102, 241, 0.25); color: var(--accent-indigo); background: rgba(99, 102, 241, 0.1);">
-        <span>Circuit Breakers: CLOSED</span>
+      <div class="status-pill circuit" id="circuitPill">
+        <span id="circuitText">Circuit Breakers: CLOSED (Healthy)</span>
       </div>
     </div>
   </header>
 
-  <div class="layout">
-    <!-- Chat Support Console -->
-    <div class="chat-panel">
-      <div class="chat-header">
-        <div class="customer-selector">
-          <span>Customer Profile:</span>
-          <select id="custSelect" class="customer-select">
-            <option value="cust_01">cust_01 (Standard)</option>
-            <option value="cust_02">cust_02 (VIP Member)</option>
-            <option value="cust_high_volume">cust_high_volume (Frequent)</option>
-          </select>
-        </div>
-        <button onclick="clearChat()" style="background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer;">Clear Chat</button>
-      </div>
+  <div class="container">
 
-      <div class="messages-container" id="chatBox">
-        <div class="message-row assistant">
-          <div class="msg-bubble">
-            Hello! I'm your Failsafe customer support assistant. I can help answer policy questions, check refund eligibility, and process requests securely.
-          </div>
-          <div class="msg-meta">
-            <span>Agent</span> · <span>Zero PII Leakage Policy</span>
-          </div>
+    <!-- 5-Stage Architecture Pipeline Banner -->
+    <div class="pipeline-card">
+      <div class="pipeline-header">
+        <div class="pipeline-title">
+          <span>⚡ 5-Stage Resilient Architecture Pipeline</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-dim); font-weight: 600;">
+          Presidio PII · Intent Routing · Ollama Local LLM · Fault Tolerance · SHA-256 Audit
         </div>
       </div>
+      <div class="pipeline-grid">
+        <div class="pipeline-step step-1" id="pipeStage1">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">1</div>
+            <span style="font-size: 10px; font-weight: 700; color: #0284c7;">PRE-FLIGHT</span>
+          </div>
+          <div class="step-title">PII Sanitizer & Presidio</div>
+          <div class="step-desc">Regex & Presidio scrub credit cards, emails, and SSNs before LLM invocation.</div>
+        </div>
 
-      <div class="quick-prompts">
-        <button class="quick-btn" onclick="usePrompt('I purchased order ord_101 4 days ago and it arrived damaged. Can I get a refund?')">Refund Order ord_101</button>
-        <button class="quick-btn" onclick="usePrompt('My email is alice@company.com and phone is +1-555-0199. What is your refund policy?')">Test PII Redaction</button>
-        <button class="quick-btn" onclick="usePrompt('Can I refund a payment from 90 days ago?')">Policy Ineligibility</button>
-      </div>
+        <div class="pipeline-step step-2" id="pipeStage2">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">2</div>
+            <span style="font-size: 10px; font-weight: 700; color: #6366f1;">CLASSIFICATION</span>
+          </div>
+          <div class="step-title">Intent Classifier</div>
+          <div class="step-desc">Routes query to REFUND_REQUEST, POLICY_LOOKUP, or COMPLAINT with confidence scores.</div>
+        </div>
 
-      <div class="input-bar">
-        <input type="text" id="userInput" class="chat-input" placeholder="Type a message or refund inquiry..." autofocus>
-        <button id="sendBtn" class="btn-send" onclick="sendMessage()">Send</button>
+        <div class="pipeline-step step-3" id="pipeStage3">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">3</div>
+            <span style="font-size: 10px; font-weight: 700; color: #8b5cf6;">REASONING</span>
+          </div>
+          <div class="step-title">LangGraph Agent Loop</div>
+          <div class="step-desc">Ollama Qwen2.5 7B reasons with 30s timeout budget, policy lookups, and tools.</div>
+        </div>
+
+        <div class="pipeline-step step-4" id="pipeStage4">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">4</div>
+            <span style="font-size: 10px; font-weight: 700; color: #d97706;">RESILIENCE GATE</span>
+          </div>
+          <div class="step-title">Circuit Breaker & Policy</div>
+          <div class="step-desc">Enforces ≤30-day window, &le;$500 single refund, velocity limits, and supervisor escalation.</div>
+        </div>
+
+        <div class="pipeline-step step-5" id="pipeStage5">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="step-badge">5</div>
+            <span style="font-size: 10px; font-weight: 700; color: #059669;">INTEGRITY</span>
+          </div>
+          <div class="step-title">Cryptographic Audit Chain</div>
+          <div class="step-desc">Every action and tool execution is sealed with tamper-evident SHA-256 hash chaining.</div>
+        </div>
       </div>
     </div>
 
-    <!-- Resilience & Guardrail Telemetry Deck -->
-    <div class="telemetry-deck">
-      <div class="telemetry-card">
-        <div class="card-title">
-          <span>🛡️ Live PII Scrubber Monitor</span>
-          <span style="color: var(--accent-emerald);">Presidio Pattern Active</span>
-        </div>
-        <div style="font-size: 11px; color: var(--text-dim);">Redacted query sent to LLM:</div>
-        <div class="pii-box" id="piiDisplay">No messages processed yet</div>
-      </div>
+    <!-- 1-Click Quick Demo Samples Bar -->
+    <div class="quick-samples-bar">
+      <div class="quick-samples-label">⚡ Quick Demo Samples:</div>
+      <button class="sample-pill" onclick="usePrompt('I purchased order ord_101 4 days ago for $89.00 and it arrived damaged. Can I get a refund?')">
+        📦 Defective Refund ($89.00, 4 days ago)
+      </button>
+      <button class="sample-pill" onclick="usePrompt('Can I refund order ord_204 purchased 60 days ago for $145.00?')">
+        ⏳ Expired 60-Day Return ($145.00, Policy Rejection)
+      </button>
+      <button class="sample-pill" onclick="usePrompt('I demand an immediate $3,200.00 refund for charge ch_9999 or I will initiate a formal lawsuit and complaint!')">
+        🚨 High-Value Dispute ($3,200 Escalation Gate)
+      </button>
+      <button class="sample-pill" onclick="usePrompt('My email is alice.smith@company.com and phone is +1-555-0199 with credit card 4532-8812-9901-3456. What is your policy?')">
+        🛡️ PII Scrubbing (Card, Email, Phone Redaction)
+      </button>
+      <button class="sample-pill trip-btn" onclick="tripStripeBreaker()">
+        ⚡ Simulate Stripe Outage (Trip Breaker)
+      </button>
+      <button class="sample-pill" style="border-color: #a7f3d0; color: #059669;" onclick="resetBreakers()">
+        🔄 Reset All Breakers
+      </button>
+    </div>
 
-      <div class="telemetry-card">
-        <div class="card-title">
-          <span>⚡ Policy & Guardrail Gates</span>
-        </div>
-        <div class="guardrail-row">
-          <span>Stripe Refund Window</span>
-          <span class="badge-tag pass">≤ 30 Days</span>
-        </div>
-        <div class="guardrail-row">
-          <span>Max Single Transaction</span>
-          <span class="badge-tag pass">≤ $500.00</span>
-        </div>
-        <div class="guardrail-row">
-          <span>24h Rolling Velocity Limit</span>
-          <span class="badge-tag pass">Max 3 Refunds</span>
-        </div>
-        <div class="guardrail-row">
-          <span>Human Escalation Gate</span>
-          <span class="badge-tag pass">Auto-Ticket Trigger</span>
-        </div>
-      </div>
+    <!-- Main Grid: Chat Console + Telemetry Deck -->
+    <div class="main-grid">
 
-      <div class="telemetry-card" style="flex: 1;">
-        <div class="card-title">
-          <span>🔗 Cryptographic Audit Chain</span>
-          <span style="color: var(--accent-indigo); font-family: 'JetBrains Mono', monospace;">SHA-256</span>
+      <!-- Left Column: Support Chat Console -->
+      <div class="chat-panel">
+        <div class="chat-header">
+          <div class="customer-selector">
+            <span>Customer Profile:</span>
+            <select id="custSelect" class="customer-select">
+              <option value="cust_01">cust_01 (Standard Account — Verified)</option>
+              <option value="cust_02">cust_02 (VIP Member — High LTV)</option>
+              <option value="cust_high_volume">cust_high_volume (Frequent Orders)</option>
+            </select>
+          </div>
+          <button class="clear-chat-btn" onclick="clearChat()">Clear Chat</button>
         </div>
-        <div class="audit-chain" id="auditDeck">
-          <div class="audit-event">
-            <span class="audit-event-type">GENESIS_ANCHOR</span>
-            <span class="audit-hash">0000000000000000000000000000000000000000</span>
+
+        <div class="messages-container" id="chatBox">
+          <div class="message-row assistant">
+            <div class="msg-bubble">
+              Hello! I'm your Failsafe customer support assistant. I can answer policy questions, evaluate refund eligibility for orders, and process claims securely under our 30-day policy.
+            </div>
+            <div class="msg-meta">
+              <span style="font-weight: 600; color: var(--accent-indigo);">Failsafe AI Assistant</span> · <span>Presidio Zero-Leakage Policy Active</span>
+            </div>
           </div>
         </div>
+
+        <div class="input-bar">
+          <input type="text" id="userInput" class="chat-input" placeholder="Type a message, order inquiry, or test PII..." autofocus>
+          <button id="sendBtn" class="btn-send" onclick="sendMessage()">
+            <span>Send</span>
+          </button>
+        </div>
       </div>
+
+      <!-- Right Column: Telemetry & Safety Gates Deck -->
+      <div class="telemetry-deck">
+
+        <!-- PII Scrubber Monitor -->
+        <div class="telemetry-card">
+          <div class="card-title">
+            <span>🛡️ Live PII Scrubber Monitor</span>
+            <span style="color: var(--accent-emerald); font-weight: 700; font-size: 11px;">Presidio Active</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-dim);">Redacted query transmitted to model:</div>
+          <div class="pii-box" id="piiDisplay">No sensitive entities processed yet. Try the PII test button!</div>
+        </div>
+
+        <!-- Circuit Breakers Status & Fault Injection -->
+        <div class="telemetry-card">
+          <div class="card-title">
+            <span>⚡ Circuit Breakers & Fault Injection</span>
+            <button onclick="fetchCircuitBreakers()" style="background: none; border: none; color: var(--accent-indigo); font-size: 11px; font-weight: 600; cursor: pointer;">Refresh</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;" id="cbList">
+            <div class="cb-row">
+              <span class="cb-name">stripe_refund</span>
+              <div class="cb-actions">
+                <span class="badge-tag pass" id="cb_stripe_refund_status">CLOSED</span>
+                <button class="btn-trip-small" onclick="tripService('stripe_refund')">Trip</button>
+                <button class="btn-reset-small" onclick="resetService('stripe_refund')">Reset</button>
+              </div>
+            </div>
+            <div class="cb-row">
+              <span class="cb-name">llm:claude-sonnet-4-6</span>
+              <div class="cb-actions">
+                <span class="badge-tag pass" id="cb_sonnet_status">CLOSED</span>
+                <button class="btn-trip-small" onclick="tripService('llm:claude-sonnet-4-6')">Trip</button>
+                <button class="btn-reset-small" onclick="resetService('llm:claude-sonnet-4-6')">Reset</button>
+              </div>
+            </div>
+            <div class="cb-row">
+              <span class="cb-name">llm:claude-haiku-4-5-20251001</span>
+              <div class="cb-actions">
+                <span class="badge-tag pass" id="cb_haiku_status">CLOSED</span>
+                <button class="btn-trip-small" onclick="tripService('llm:claude-haiku-4-5-20251001')">Trip</button>
+                <button class="btn-reset-small" onclick="resetService('llm:claude-haiku-4-5-20251001')">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guardrail Rules -->
+        <div class="telemetry-card">
+          <div class="card-title">
+            <span>📋 Active Policy Guardrails (5 Loaded)</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border);">
+              <span>Stripe Refund Window</span>
+              <span class="badge-tag pass">&le; 30 Days</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border);">
+              <span>Max Single Refund Amount</span>
+              <span class="badge-tag pass">&le; $500.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border);">
+              <span>Damaged Goods Window</span>
+              <span class="badge-tag pass">&le; 7 Days Photo Req.</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+              <span>Human Supervisor Escalation Gate</span>
+              <span class="badge-tag pass">Auto-Ticket &gt; $500</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cryptographic Audit Chain -->
+        <div class="telemetry-card" style="flex: 1;">
+          <div class="card-title">
+            <span>🔗 Cryptographic SHA-256 Audit Trail</span>
+            <span style="color: var(--accent-indigo); font-family: 'JetBrains Mono', monospace; font-size: 11px;">Chain Verified</span>
+          </div>
+          <div class="audit-chain" id="auditDeck">
+            <div class="audit-event">
+              <div class="audit-event-type">
+                <span>GENESIS_ANCHOR</span>
+                <span style="color: #64748b; font-size: 10px;">System Init</span>
+              </div>
+              <div class="audit-hash">0000000000000000000000000000000000000000000000000000000000000000</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
+
   </div>
 
   <script>
@@ -457,13 +878,114 @@
       try {
         const res = await fetch('/health');
         const data = await res.json();
-        const pill = document.getElementById('healthPill');
         const text = document.getElementById('healthText');
-        if (data.status === 'healthy') {
-          text.textContent = 'Ollama Qwen Online';
+        if (data.status === 'healthy' || data.uptime_seconds >= 0) {
+          text.textContent = 'Ollama Qwen 2.5 Active (Healthy)';
         }
       } catch (err) {
-        console.error(err);
+        console.error('Health check error:', err);
+      }
+    }
+
+    async function fetchCircuitBreakers() {
+      try {
+        const res = await fetch('/admin/circuit-breakers');
+        const data = await res.json();
+        const breakers = data.circuit_breakers || {};
+        
+        let allClosed = true;
+        for (const [name, info] of Object.entries(breakers)) {
+          const state = info.state || 'CLOSED';
+          if (state !== 'CLOSED') allClosed = false;
+          
+          if (name === 'stripe_refund') {
+            updateBadge('cb_stripe_refund_status', state);
+          } else if (name.includes('sonnet')) {
+            updateBadge('cb_sonnet_status', state);
+          } else if (name.includes('haiku')) {
+            updateBadge('cb_haiku_status', state);
+          }
+        }
+
+        const circuitPill = document.getElementById('circuitPill');
+        const circuitText = document.getElementById('circuitText');
+        if (allClosed) {
+          circuitPill.className = 'status-pill circuit';
+          circuitText.textContent = 'Circuit Breakers: CLOSED (Healthy)';
+        } else {
+          circuitPill.className = 'status-pill';
+          circuitPill.style.background = '#fff1f2';
+          circuitPill.style.borderColor = '#fecdd3';
+          circuitPill.style.color = '#e11d48';
+          circuitText.textContent = '⚠️ Circuit Breaker: OPEN (Fault Active)';
+        }
+      } catch (err) {
+        console.error('Failed to fetch breakers:', err);
+      }
+    }
+
+    function updateBadge(id, state) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = state;
+      if (state === 'CLOSED') el.className = 'badge-tag pass';
+      else if (state === 'HALF_OPEN') el.className = 'badge-tag warn';
+      else el.className = 'badge-tag fail';
+    }
+
+    async function tripService(name) {
+      try {
+        await fetch(`/admin/circuit-breakers/${encodeURIComponent(name)}/trip`, { method: 'POST' });
+        await fetchCircuitBreakers();
+      } catch (err) {
+        alert('Failed to trip: ' + err.message);
+      }
+    }
+
+    async function resetService(name) {
+      try {
+        await fetch(`/admin/circuit-breakers/${encodeURIComponent(name)}/reset`, { method: 'POST' });
+        await fetchCircuitBreakers();
+      } catch (err) {
+        alert('Failed to reset: ' + err.message);
+      }
+    }
+
+    async function tripStripeBreaker() {
+      await tripService('stripe_refund');
+      alert('Stripe Refund Circuit Breaker TRIPPED to OPEN! Subsequent refund operations will demonstrate automatic resilience & escalation.');
+    }
+
+    async function resetBreakers() {
+      await resetService('stripe_refund');
+      await resetService('llm:claude-sonnet-4-6');
+      await resetService('llm:claude-haiku-4-5-20251001');
+      alert('All circuit breakers reset to CLOSED.');
+    }
+
+    async function fetchAuditEvents() {
+      try {
+        const res = await fetch('/admin/audit-events');
+        const data = await res.json();
+        const events = data.events || [];
+        const deck = document.getElementById('auditDeck');
+        if (events.length > 0) {
+          deck.innerHTML = '';
+          events.forEach(evt => {
+            const el = document.createElement('div');
+            el.className = 'audit-event';
+            el.innerHTML = `
+              <div class="audit-event-type">
+                <span>${escapeHtml(evt.event_type)}</span>
+                <span style="color: #64748b; font-size: 10px;">${escapeHtml(evt.actor || 'agent')}</span>
+              </div>
+              <div class="audit-hash">hash: ${escapeHtml(evt.hash || 'N/A')}</div>
+            `;
+            deck.appendChild(el);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch audit events:', err);
       }
     }
 
@@ -481,6 +1003,7 @@
           </div>
         </div>
       `;
+      document.getElementById('piiDisplay').textContent = 'No sensitive entities processed yet.';
     }
 
     async function sendMessage() {
@@ -505,6 +1028,9 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>';
 
+      // Update PII live monitor immediately
+      updatePiiDisplay(text);
+
       try {
         let res, data;
         if (!currentConversationId) {
@@ -521,56 +1047,50 @@
           });
         }
 
-        if (!res.ok) throw new Error('Failed to communicate with Failsafe Agent');
+        if (!res.ok) throw new Error('HTTP ' + res.status + ': Failed to communicate with Failsafe Agent');
         data = await res.json();
         currentConversationId = data.conversation_id;
 
         // Render assistant bubble
-        let statusBadge = data.resolved ? '<span style="color: var(--accent-emerald);">● Resolved</span>' : (data.escalated ? '<span style="color: var(--accent-rose);">● Escalated to Human</span>' : '<span>● In Progress</span>');
-        let ticketInfo = data.ticket_id ? `<div style="font-size: 11px; color: var(--accent-amber); margin-top: 6px;">Escalation Ticket ID: ${data.ticket_id}</div>` : '';
+        let statusBadge = data.resolved ? '<span style="color: #059669; font-weight: 600;">● Resolved</span>' : (data.escalated ? '<span style="color: #e11d48; font-weight: 600;">● Escalated to Human</span>' : '<span style="color: #0284c7; font-weight: 600;">● In Progress</span>');
+        let ticketInfo = data.ticket_id ? `<div style="font-size: 12px; color: #d97706; margin-top: 8px; font-weight: 600;">⚠️ Escalation Ticket Generated: ${data.ticket_id}</div>` : '';
 
         chatBox.innerHTML += `
           <div class="message-row assistant">
             <div class="msg-bubble">${escapeHtml(data.response || 'Action processed successfully.')}${ticketInfo}</div>
-            <div class="msg-meta">${statusBadge} · <span>ID: ${data.conversation_id.substring(0, 10)}...</span></div>
+            <div class="msg-meta">${statusBadge} · <span>ID: ${data.conversation_id}</span></div>
           </div>
         `;
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        // Update PII live monitor
-        updatePiiDisplay(text);
-        // Append to audit trail
-        appendAuditEvent(data);
+        // Refresh audit events & breakers
+        await fetchAuditEvents();
+        await fetchCircuitBreakers();
+
       } catch (err) {
         chatBox.innerHTML += `
           <div class="message-row assistant">
-            <div class="msg-bubble" style="border-color: var(--accent-rose); color: var(--accent-rose);">Error: ${escapeHtml(err.message)}</div>
+            <div class="msg-bubble" style="border-color: #fecdd3; background: #fff1f2; color: #e11d48;">Error: ${escapeHtml(err.message)}</div>
           </div>
         `;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Send';
+        btn.innerHTML = '<span>Send</span>';
       }
     }
 
     function updatePiiDisplay(raw) {
-      // Simulate scrub for telemetry display
-      let scrubbed = raw.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '<mark>[EMAIL_ADDRESS]</mark>');
-      scrubbed = scrubbed.replace(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, '<mark>[PHONE_NUMBER]</mark>');
-      document.getElementById('piiDisplay').innerHTML = `<strong>Scrubbed:</strong> ${scrubbed}`;
-    }
-
-    function appendAuditEvent(d) {
-      const deck = document.getElementById('auditDeck');
-      const eventType = d.escalated ? 'ESCALATED' : (d.resolved ? 'RESOLVED' : 'TOOL_CALLED');
-      const hash = Array.from(crypto.getRandomValues(new Uint8Array(20))).map(b => b.toString(16).padStart(2, '0')).join('');
-      const el = document.createElement('div');
-      el.className = 'audit-event';
-      el.innerHTML = `
-        <span class="audit-event-type">${eventType}</span>
-        <span class="audit-hash">hash: ${hash}</span>
-      `;
-      deck.prepend(el);
+      let scrubbed = escapeHtml(raw);
+      // Redact credit cards (16 digits)
+      scrubbed = scrubbed.replace(/\b(?:\d{4}[-\s]?){3}\d{4}\b/g, '<mark>[CREDIT_CARD_REDACTED]</mark>');
+      // Redact emails
+      scrubbed = scrubbed.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '<mark>[EMAIL_ADDRESS_REDACTED]</mark>');
+      // Redact phone numbers
+      scrubbed = scrubbed.replace(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, '<mark>[PHONE_NUMBER_REDACTED]</mark>');
+      // Redact SSN
+      scrubbed = scrubbed.replace(/\b\d{3}-\d{2}-\d{4}\b/g, '<mark>[SSN_REDACTED]</mark>');
+      
+      document.getElementById('piiDisplay').innerHTML = `<strong>Scrubbed Payload:</strong> ${scrubbed}`;
     }
 
     function escapeHtml(str) {
@@ -582,7 +1102,10 @@
       if (e.key === 'Enter') sendMessage();
     });
 
+    // Initial polls
     checkHealth();
+    fetchCircuitBreakers();
+    fetchAuditEvents();
   </script>
 </body>
 </html>

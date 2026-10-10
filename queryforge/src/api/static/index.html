@@ -7,79 +7,89 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0e1117; --surface: #161b22; --border: #30363d;
-      --text: #e6edf3; --muted: #8b949e; --dim: #484f58;
-      --accent: #58a6ff; --green: #3fb950; --red: #f85149;
-      --amber: #d29922; --radius: 10px;
+      --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9; --border: #e2e8f0;
+      --text: #0f172a; --muted: #64748b; --dim: #94a3b8;
+      --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #eff6ff; --accent-border: #bfdbfe;
+      --green: #16a34a; --green-light: #f0fdf4; --green-border: #bbf7d0;
+      --red: #dc2626; --red-light: #fef2f2; --red-border: #fecaca;
+      --amber: #d97706; --amber-light: #fffbeb; --amber-border: #fde68a;
+      --purple: #7c3aed; --purple-light: #f5f3ff;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    .header { padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); position: sticky; top: 0; z-index: 10; }
-    .header h1 { font-size: 18px; font-weight: 700; }
+    /* Header */
+    .header { padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #ffffff; position: sticky; top: 0; z-index: 20; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .header h1 { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
     .header h1 span { color: var(--accent); }
     .health { display: flex; gap: 16px; align-items: center; }
-    .health-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
-    .dot.ok { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,0.5); }
+    .health-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+    .dot.ok { background: var(--green); box-shadow: 0 0 6px rgba(22,163,74,0.4); }
     .dot.err { background: var(--red); }
 
-    .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    /* Uniform expansive container */
+    .container { width: 100%; max-width: 1560px; margin: 0 auto; padding: 24px 32px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-    .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-    .card-body { padding: 18px; }
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-head { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; color: var(--text); display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+    .card-body { padding: 20px; }
 
     /* Query Input */
-    .query-area { display: flex; gap: 10px; }
-    textarea { flex: 1; height: 64px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: inherit; font-size: 13px; resize: vertical; outline: none; }
-    textarea:focus { border-color: var(--accent); }
-    .btn { padding: 10px 20px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; white-space: nowrap; }
-    .btn:hover { background: #4c9aed; }
+    .query-area { display: flex; gap: 12px; }
+    textarea { flex: 1; height: 68px; background: #ffffff; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-family: inherit; font-size: 13px; resize: vertical; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: border-color 0.15s, box-shadow 0.15s; }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .btn { padding: 10px 22px; border-radius: var(--radius-sm); border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn:hover { background: var(--accent-hover); box-shadow: 0 2px 4px rgba(37,99,235,0.25); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-weight: 500; }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
     .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: 6px; }
 
-    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-    .ex-btn { padding: 5px 10px; background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.2); border-radius: 6px; color: var(--accent); font-size: 11px; cursor: pointer; transition: all 0.15s; }
-    .ex-btn:hover { background: rgba(88,166,255,0.15); }
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+    .ex-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-right: 4px; }
+    .ex-btn { padding: 6px 12px; background: var(--accent-light); border: 1px solid var(--accent-border); border-radius: 20px; color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .ex-btn:hover { background: #dbeafe; transform: translateY(-1px); }
 
     /* 2-col layout */
-    .grid-side { display: grid; grid-template-columns: 260px 1fr; gap: 20px; flex: 1; }
+    .grid-side { display: grid; grid-template-columns: 320px 1fr; gap: 24px; flex: 1; }
 
     /* Sidebar */
-    .sidebar { display: flex; flex-direction: column; gap: 16px; }
-    .sidebar .card-body { padding: 14px; }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar .card-body { padding: 16px; }
 
     /* Tools */
-    .tool-item { padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-size: 12px; }
+    .tool-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
     .tool-item:last-child { border-bottom: none; }
-    .tool-name { font-weight: 600; color: var(--text); }
-    .tool-desc { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .tool-name { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .tool-desc { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
 
     /* PDF */
-    .drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; color: var(--muted); font-size: 12px; transition: border-color 0.15s; }
-    .drop-zone:hover { border-color: var(--accent); }
-    .pdf-result { margin-top: 12px; font-size: 12px; line-height: 1.6; }
-    .pdf-result h4 { color: var(--accent); margin-bottom: 4px; }
+    .drop-zone { border: 2px dashed #cbd5e1; border-radius: var(--radius-sm); padding: 22px; text-align: center; cursor: pointer; color: var(--muted); font-size: 12px; background: var(--surface2); transition: all 0.15s; }
+    .drop-zone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .pdf-result { margin-top: 14px; font-size: 12px; line-height: 1.6; padding: 12px; background: var(--accent-light); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); }
+    .pdf-result h4 { color: var(--accent); margin-bottom: 4px; font-size: 13px; }
 
     /* Pipeline */
-    .pipeline { display: flex; gap: 8px; margin-bottom: 14px; }
-    .pipe-step { flex: 1; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); font-size: 11px; text-align: center; color: var(--dim); transition: all 0.2s; }
-    .pipe-step.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.06); }
-    .pipe-step.done { border-color: var(--green); color: var(--green); }
+    .pipeline { display: flex; gap: 10px; margin-bottom: 16px; }
+    .pipe-step { flex: 1; padding: 10px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border); font-size: 12px; font-weight: 600; text-align: center; color: var(--dim); transition: all 0.2s; }
+    .pipe-step.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .pipe-step.done { border-color: var(--green); color: var(--green); background: var(--green-light); }
 
     /* Response */
-    .response-body { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
-    .sources-list { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-    .sources-list li { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .response-body { font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: var(--text); background: var(--surface2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .sources-list { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .sources-list li { font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-left: 18px; }
 
     .hidden { display: none !important; }
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.6s linear infinite; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; border-top-color: #fff; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 800px) { .grid-side { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .grid-side { grid-template-columns: 1fr; } .container { padding: 16px; } }
   </style>
 </head>
 <body>
@@ -157,8 +167,14 @@
 
         <!-- Charts -->
         <div class="card hidden" id="chartsCard">
-          <div class="card-head">Generated Charts</div>
+          <div class="card-head">Generated Analytical Charts</div>
           <div class="card-body" id="chartsBody"></div>
+        </div>
+
+        <!-- Tool Calls Execution Breakdown -->
+        <div class="card hidden" id="toolCallsCard">
+          <div class="card-head" style="color:var(--accent);">⚙️ Tool Execution Sequence & Parameters</div>
+          <div class="card-body" id="toolCallsList"></div>
         </div>
 
         <!-- Empty state -->
@@ -218,8 +234,30 @@
 
         // Show response
         document.getElementById('respCard').classList.remove('hidden');
-        document.getElementById('latencyBadge').textContent = elapsed + 's';
+        document.getElementById('latencyBadge').textContent = elapsed + 's (' + (d.tool_count || (d.tool_calls ? d.tool_calls.length : 0)) + ' tools)';
         document.getElementById('respBody').textContent = d.answer || d.detail || JSON.stringify(d, null, 2);
+
+        // Tool Calls breakdown
+        const tcContainer = document.getElementById('toolCallsList');
+        if (tcContainer && d.tool_calls && d.tool_calls.length) {
+          document.getElementById('toolCallsCard').classList.remove('hidden');
+          tcContainer.innerHTML = d.tool_calls.map((tc, idx) => {
+            const toolName = tc.input?.tool_name || tc.tool_name || 'Tool ' + (idx + 1);
+            const latency = tc.output?.latency_ms ? tc.output.latency_ms + 'ms' : '';
+            const success = tc.output?.success !== false;
+            return `
+              <div style="padding:12px 16px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong style="color:var(--accent); font-size:13px;">Step ${idx + 1}: ${esc(toolName)}</strong>
+                  <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; background:${success ? 'var(--green-light)' : 'var(--red-light)'}; color:${success ? 'var(--green)' : 'var(--red)'}; border:1px solid ${success ? 'var(--green-border)' : 'var(--red-border)'};">${success ? '✓ SUCCESS' : '✗ FAILED'} ${latency}</span>
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-top:5px;">
+                  Parameters: <code style="background:#ffffff; padding:2px 6px; border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:monospace;">${esc(JSON.stringify(tc.input?.arguments || {}))}</code>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
 
         // Sources
         if (d.sources && d.sources.length) {
@@ -228,9 +266,13 @@
         }
 
         // Charts
-        if (d.charts && d.charts.length) {
+        const chartList = d.chart_paths || d.charts || [];
+        if (chartList && chartList.length) {
           document.getElementById('chartsCard').classList.remove('hidden');
-          document.getElementById('chartsBody').innerHTML = d.charts.map(c => `<img src="/charts/${esc(c)}" style="max-width:100%;border-radius:8px;margin-bottom:8px" alt="chart">`).join('');
+          document.getElementById('chartsBody').innerHTML = chartList.map(c => {
+            const fn = c.split('/').pop().split('\\').pop();
+            return `<img src="/charts/${encodeURIComponent(fn)}" style="max-width:100%;border-radius:8px;margin-bottom:8px;box-shadow:0 4px 14px rgba(0,0,0,0.35);" alt="chart">`;
+          }).join('');
         }
       } catch(e) {
         alert('Query failed: ' + e.message);

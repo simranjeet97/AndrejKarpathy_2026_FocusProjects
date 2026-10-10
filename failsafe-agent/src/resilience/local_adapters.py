@@ -98,6 +98,14 @@ class InMemoryRedis:
     def pipeline(self) -> LocalRedisPipeline:
         return LocalRedisPipeline(self)
 
+    async def keys(self, pattern: str = "*") -> List[str]:
+        import fnmatch
+        matched = [k for k in self._store.keys() if fnmatch.fnmatch(k, pattern)]
+        for k in self._zsets.keys():
+            if fnmatch.fnmatch(k, pattern) and k not in matched:
+                matched.append(k)
+        return matched
+
     def _zremrangebyscore(self, key: str, min_val: Any, max_val: Any) -> int:
         zset = self._zsets.setdefault(key, {})
         # Parse max cutoff if e.g. "(123.45"

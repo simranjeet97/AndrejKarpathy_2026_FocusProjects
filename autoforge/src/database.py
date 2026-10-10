@@ -87,6 +87,16 @@ class LocalSqlitePool:
             """
         )
         await self._conn.commit()
+        try:
+            await self._conn.execute("ALTER TABLE tasks ADD COLUMN patch_diff TEXT")
+            await self._conn.commit()
+        except Exception:
+            pass
+        try:
+            await self._conn.execute("ALTER TABLE tasks ADD COLUMN summary TEXT")
+            await self._conn.commit()
+        except Exception:
+            pass
 
     @asynccontextmanager
     async def acquire(self):

@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Any, Dict, List, Optional
 import httpx
@@ -23,30 +24,17 @@ async def call_anthropic_api(
     tools: Optional[List[Dict[str, Any]]] = None,
     system_prompt: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Helper method to make HTTP requests to Anthropic Messages API."""
+    """Helper method to make HTTP requests to Anthropic Messages API or local Ollama."""
     from src.policy.pii_scrubber import scrub_messages, scrub
     
     # Scrub incoming messages before transmitting to external provider
     scrubbed_messages = scrub_messages(messages)
     
     api_key = settings.ANTHROPIC_API_KEY.get_secret_value()
-    
-    # Fast path: simulation if key is a mock key
-    if api_key.startswith("mock-"):
-        # Simulate network failure or timeout for testing fallback
-        if "fail" in model or "sonnet" in model:
-            raise httpx.ConnectError("Failed to connect to simulated provider")
-            
-        raw_text = f"Simulated response from {model}"
-        scrubbed_response = scrub(raw_text).scrubbed_text
-        return {
-            "content": [{"type": "text", "text": scrubbed_response}],
-            "model": model,
-        }
 
-    # Local Ollama route (if API key is ollama or local ollama configured)
+    # 1. Local Ollama route (fast, resilient local model)
     ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    if api_key.startswith("ollama") or os.getenv("USE_OLLAMA", "true").lower() == "true":
+    if os.getenv("USE_OLLAMA", "true").lower() == "true":
         ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
         formatted_messages = []
         if system_prompt:
@@ -76,7 +64,20 @@ async def call_anthropic_api(
                         "model": ollama_model,
                     }
         except Exception as ollama_err:
-            logger.warn("Ollama call failed, continuing to Anthropic/fallback", error=str(ollama_err))
+            logger.warn("Ollama call failed or offline, trying secondary/mock", error=str(ollama_err))
+
+    # 2. Fast path: simulation if key is a mock key
+    if api_key.startswith("mock-"):
+        # Simulate network failure or timeout for testing fallback
+        if "fail" in model or "sonnet" in model:
+            raise httpx.ConnectError("Failed to connect to simulated provider")
+            
+        raw_text = f"Simulated response from {model}"
+        scrubbed_response = scrub(raw_text).scrubbed_text
+        return {
+            "content": [{"type": "text", "text": scrubbed_response}],
+            "model": model,
+        }
 
     headers = {
         "x-api-key": api_key,
@@ -105,7 +106,6 @@ async def call_anthropic_api(
         response.raise_for_status()
         
         result = response.json()
-        # Scrub assistant output text block content
         if "content" in result:
             for block in result["content"]:
                 if block.get("type") == "text" and "text" in block:
@@ -124,10 +124,9 @@ async def call_with_fallback(
     Tries PRIMARY_MODEL first. On failure, logs metrics and falls back to FALLBACK_MODEL.
     On subsequent failure, returns a SafeResponse warning the user and escalating.
     """
-    # Fallback to local memory if redis_client isn't passed (useful for tests)
-    import redis.asyncio as aioredis
     if redis_client is None:
-        redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        from src.resilience.local_adapters import InMemoryRedis
+        redis_client = InMemoryRedis()
 
     # Initialize Circuit Breakers for both paths
     primary_cb = CircuitBreaker(

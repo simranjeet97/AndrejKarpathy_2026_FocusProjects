@@ -96,7 +96,12 @@ class ReportDatabase:
             async with self.conn.execute(
                 """
                 SELECT id, startup_name, generated_at, investment_score
-                FROM diligence_reports
+                FROM (
+                    SELECT id, startup_name, generated_at, investment_score,
+                           ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(startup_name)) ORDER BY generated_at DESC) as rn
+                    FROM diligence_reports
+                )
+                WHERE rn = 1
                 ORDER BY generated_at DESC
                 LIMIT ?
                 """,

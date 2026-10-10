@@ -299,7 +299,7 @@ class DiligenceOrchestrator:
         """Assemble final DiligenceReport from all specialist findings and executive summary."""
         market = None
         market_res = all_results.get("market_research")
-        if market_res and market_res.status in (AgentStatus.SUCCESS, "SUCCESS") and market_res.data:
+        if market_res and market_res.data:
             try:
                 market = MarketData(**market_res.data)
             except Exception:
@@ -307,7 +307,7 @@ class DiligenceOrchestrator:
 
         competitors = None
         competitor_res = all_results.get("competitor")
-        if competitor_res and competitor_res.status in (AgentStatus.SUCCESS, "SUCCESS") and competitor_res.data:
+        if competitor_res and competitor_res.data:
             try:
                 competitors = CompetitorLandscape(**competitor_res.data)
             except Exception:
@@ -315,7 +315,7 @@ class DiligenceOrchestrator:
 
         financials = None
         financial_res = all_results.get("financial")
-        if financial_res and financial_res.status in (AgentStatus.SUCCESS, "SUCCESS") and financial_res.data:
+        if financial_res and financial_res.data:
             try:
                 financials = FinancialProfile(**financial_res.data)
             except Exception:
@@ -323,7 +323,7 @@ class DiligenceOrchestrator:
 
         legal = None
         legal_res = all_results.get("legal")
-        if legal_res and legal_res.status in (AgentStatus.SUCCESS, "SUCCESS") and legal_res.data:
+        if legal_res and legal_res.data:
             try:
                 legal = LegalProfile(**legal_res.data)
             except Exception:
